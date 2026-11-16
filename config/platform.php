@@ -6,7 +6,7 @@ return [
     | Versión semántica de la plataforma. Debe coincidir con CHANGELOG.md y el
     | tag de git.
     */
-    'version' => '0.6.0',
+    'version' => '0.7.0',
 
     /*
     | Ventas. Por defecto un vendedor ve solo sus ventas; con SELLER_SEES_ALL_SALES=true ve todas.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 — Fase 6: catálogo web
+
+Requiere migración: sí (`products` suma `slug`, `is_published`, `is_featured`, `show_price`, `images`; los productos existentes reciben su slug).
+
+- **Catálogo web** (módulo): páginas públicas `/catalogo`, `/catalogo/{categoría}` y `/producto/{slug}` con el diseño del tema elegido, buscador, filtro por categoría, paginación y consulta por WhatsApp con el nombre y el enlace del producto. Con el módulo apagado responden 404.
+- Solo se muestran productos **activos y publicados**; lo demás responde 404. Nunca se expone costo, SKU interno ni cantidades de stock.
+- **Pestaña Catálogo** en el producto (solo con el módulo): publicado, destacado en la landing, mostrar precio («Consultar precio» si no), enlace (slug) e imágenes (hasta 6, en el disco público; se borran al quitarlas o al borrar el producto). Columna y filtro «Publicado» en la lista de productos.
+- **Slug** automático, único y estable al renombrar; editable a mano.
+- **Variantes y Stock** en la ficha: con Variantes se listan las variantes activas y «Desde» si los precios difieren; con Stock se marcan «Agotado» (producto y variantes) o se ocultan según el ajuste «Mostrar los productos agotados» del módulo.
+- **Landing**: la sección Catálogo muestra las categorías con productos publicados (con enlace) y los destacados, más «Ver catálogo completo». El menú enlaza al catálogo aunque la sección de la landing esté oculta.
+- `LandingController` y `CatalogController` comparten el armado de datos del tema (`BuildsLandingData`).
+
 ## 0.6.0 — Fase 5: sitio, apariencia y temas
 
 Requiere migración: sí (tabla `settings`). Requiere `php artisan storage:link` (lo hace `composer setup`) y `npm run build`.

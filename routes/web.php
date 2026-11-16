@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -7,6 +8,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::domain(config('domains.landing'))->group(function () {
     Route::get('/', LandingController::class)->name('landing');
+
+    // Catálogo web: con el módulo apagado estas rutas responden 404.
+    Route::middleware('module:catalog')->group(function () {
+        Route::get('/catalogo', [CatalogController::class, 'index'])->name('catalog.index');
+        Route::get('/catalogo/{slug}', [CatalogController::class, 'category'])->where('slug', '[a-z0-9\-]+')->name('catalog.category');
+        Route::get('/producto/{slug}', [CatalogController::class, 'show'])->where('slug', '[a-z0-9\-]+')->name('catalog.product');
+    });
 });
 
 Route::domain(config('domains.panel'))->get('/up', fn () => response('OK'))->name('health');

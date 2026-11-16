@@ -48,6 +48,16 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **El logo del acceso** es opcional (si no hay, se usa el logo claro); sin ningún logo se muestra el nombre del negocio.
 - Los cambios de contenido del sitio quedan en la actividad con antes y después; la apariencia (cosa del SuperAdmin) no.
 
+## Decisiones de diseño (Fase 6)
+
+- **Destacados:** `products.is_featured` (no estaba en el plan base) permite elegir qué productos aparecen en la sección Catálogo de la landing.
+- **Slug estable:** se genera una vez desde el nombre y no cambia al renombrar, para no romper enlaces públicos. Se puede editar a mano.
+- **Lo público es mínimo:** nunca se muestran costo, SKU interno ni cantidades; con Stock solo «Agotado». Lo no publicado, inactivo o inexistente responde 404.
+- **Agotados:** el ajuste «Mostrar los productos agotados» del módulo Catálogo decide si las variantes agotadas se marcan o se ocultan y si los productos totalmente agotados se listan. La ficha de un producto agotado sigue accesible por enlace directo.
+- **Precio con variantes:** si las variantes disponibles tienen precios distintos se muestra «Desde» el más bajo.
+- **Categorías en la web:** solo las activas que tienen productos publicados.
+- **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

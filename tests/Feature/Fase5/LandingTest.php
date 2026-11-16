@@ -3,6 +3,7 @@
 use App\Enums\Module;
 use App\Facades\Modules;
 use App\Models\Category;
+use App\Models\Product;
 use App\Services\Appearance;
 use App\Services\SiteContent;
 use Illuminate\Support\Facades\Storage;
@@ -125,8 +126,10 @@ it('las secciones sin contenido no se muestran aunque estén activas', function 
 });
 
 it('la sección Catálogo solo aparece con el módulo encendido y categorías activas', function () {
-    Category::factory()->create(['name' => 'Remeras', 'active' => true]);
-    Category::factory()->create(['name' => 'Oculta', 'active' => false]);
+    $remeras = Category::factory()->create(['name' => 'Remeras', 'active' => true]);
+    Product::factory()->create(['category_id' => $remeras->id, 'is_published' => true]);
+    $oculta = Category::factory()->create(['name' => 'Oculta', 'active' => false]);
+    Product::factory()->create(['category_id' => $oculta->id, 'is_published' => true]);
 
     landing($this)->assertDontSee('id="catalog"', false)->assertDontSee('Remeras');
 
@@ -189,7 +192,8 @@ it('todos los temas y combinaciones responden con y sin contenido cargado', func
     landing($this)->assertOk()->assertSee('Ingresar al sistema');
 
     Modules::enable(Module::Catalog);
-    Category::factory()->create(['name' => 'Accesorios']);
+    $accesorios = Category::factory()->create(['name' => 'Accesorios']);
+    Product::factory()->create(['category_id' => $accesorios->id, 'is_published' => true]);
     saveSite([
         'name' => 'Casa Lila',
         'value_items' => [['title' => 'Uno', 'text' => 'Texto']],

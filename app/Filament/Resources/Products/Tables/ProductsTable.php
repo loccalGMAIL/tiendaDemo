@@ -57,6 +57,11 @@ class ProductsTable
                 IconColumn::make('active')
                     ->label('Activo')
                     ->boolean(),
+                // Módulo Catálogo web.
+                IconColumn::make('is_published')
+                    ->label('Publicado')
+                    ->boolean()
+                    ->visible(fn (): bool => Modules::enabled(Module::Catalog)),
             ])
             ->defaultSort('name')
             ->filters([
@@ -64,6 +69,9 @@ class ProductsTable
                     ->label('Categoría')
                     ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all()),
                 TernaryFilter::make('active')->label('Activo'),
+                TernaryFilter::make('is_published')
+                    ->label('Publicado en el catálogo')
+                    ->visible(fn (): bool => Modules::enabled(Module::Catalog)),
             ])
             ->recordActions([
                 EditAction::make(),
