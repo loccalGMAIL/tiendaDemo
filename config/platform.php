@@ -6,7 +6,7 @@ return [
     | Versión semántica de la plataforma. Debe coincidir con CHANGELOG.md y el
     | tag de git.
     */
-    'version' => '0.1.0',
+    'version' => '0.2.0',
 
     /*
     | Usuarios iniciales que crea el seeder (se puede correr varias veces).

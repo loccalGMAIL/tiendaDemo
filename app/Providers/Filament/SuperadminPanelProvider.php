@@ -28,6 +28,7 @@ class SuperadminPanelProvider extends PanelProvider
             ->domain(config('domains.superadmin'))
             ->path('')
             ->login()
+            ->profile()
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
                 'primary' => Color::Amber,

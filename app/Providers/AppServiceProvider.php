@@ -2,6 +2,15 @@
 
 namespace App\Providers;
 
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Support\Facades\FilamentView;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Column;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +28,37 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->configureFilamentDefaults();
+        $this->registerVersionHooks();
+    }
+
+    /**
+     * Comportamiento común de todos los paneles.
+     */
+    private function configureFilamentDefaults(): void
+    {
+        // Todas las columnas de todas las tablas se pueden ocultar.
+        Column::configureUsing(fn (Column $column) => $column->toggleable());
+
+        // Botones con ícono: solo el ícono; el texto va como tooltip.
+        $iconOnly = fn (Action $action) => $action
+            ->iconButton()
+            ->tooltip(fn (Action $action) => $action->getLabel());
+
+        CreateAction::configureUsing(fn (CreateAction $action) => $iconOnly($action->icon(Heroicon::Plus)));
+        EditAction::configureUsing(fn (EditAction $action) => $iconOnly($action->icon(Heroicon::PencilSquare)));
+        ViewAction::configureUsing(fn (ViewAction $action) => $iconOnly($action->icon(Heroicon::Eye)));
+        DeleteAction::configureUsing(fn (DeleteAction $action) => $iconOnly($action->icon(Heroicon::Trash)));
+    }
+
+    /**
+     * Versión del sistema visible en la barra superior y en el login.
+     */
+    private function registerVersionHooks(): void
+    {
+        $version = fn () => view('filament.version');
+
+        FilamentView::registerRenderHook(PanelsRenderHook::TOPBAR_END, $version);
+        FilamentView::registerRenderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, $version);
     }
 }

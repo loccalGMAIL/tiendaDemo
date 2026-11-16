@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 — Fase 1: usuarios y base del panel
+
+Requiere migración: sí (`users` suma `role`, `active`, `is_default_seller`, `google_id`; tablas `activity_logs` y `table_column_preferences`).
+
+- Roles `superadmin`, `admin` y `seller`; acceso por panel con `User::canAccessPanel()`. Un usuario inactivo no entra a ningún panel y un rol equivocado recibe el mismo mensaje que con credenciales incorrectas.
+- SuperAdmin invisible para el cliente: scope `User::visibleToClient()` (listados, selectores y filtros), edición con 404, rol no asignable y sus acciones y las hechas sobre él fuera de la actividad (`ActivityLog::visibleToClient()`).
+- Recurso Usuarios (panel `admin`) con acciones `CreateUser`, `UpdateUser`, `DeleteUser`: vendedor por defecto único, nadie se borra a sí mismo, contraseña vacía al editar no se cambia.
+- Registro de actividad inmutable: ingresos, salidas e intentos fallidos; altas, cambios y bajas con valores antes y después (trait `LogsActivity`), sin contraseñas. Pantalla Actividad con filtros por usuario, evento y período.
+- Columnas de todas las tablas ocultables, guardadas en la base por usuario y por tabla (`PersistsTableColumns`).
+- Botones de crear, editar, ver y borrar con solo ícono y tooltip; tablas compactas; versión visible en la barra superior y en el login; edición del propio perfil en ambos paneles.
+- `InitialUsersSeeder` (admin y superadmin desde `.env`), repetible sin duplicar ni pisar contraseñas.
+
 ## 0.1.0 — Fase 0: preguntas y arranque
 
 Requiere migración: sí (tablas base de Laravel: users, cache, jobs, sessions).
