@@ -3,12 +3,14 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-/* Tablas compactas en todo el panel: menos aire vertical en filas y encabezados. */
+/*
+ * Tablas compactas en todo el panel: menos aire vertical en encabezados y filas.
+ * El relleno de las filas vive en el elemento raíz de cada columna (texto, ícono, badge…).
+ */
 .fi-ta-header-cell {
     padding-block: 0.5rem;
 }
 
-.fi-ta-cell > *,
-.fi-ta-cell .fi-ta-col {
-    padding-block: 0.375rem;
+.fi-ta-cell .fi-ta-col > * {
+    padding-block: 0.25rem;
 }

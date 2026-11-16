@@ -9,3 +9,5 @@ parameters:
         - app
         - database
         - routes
+        # Los traits de módulo se analizan en el contexto de las clases que los usan.
+        - tests/Fixtures

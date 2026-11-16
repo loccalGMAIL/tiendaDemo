@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — Fase 2: módulos y panel superadmin
+
+Requiere migración: sí (tabla `modules`).
+
+- Módulos habilitables: enum `App\Enums\Module` (9 módulos, con dependencias y configuración requerida), tabla `modules` y servicio `App\Services\Modules` (fachada `App\Facades\Modules`) con caché. Fila ausente = módulo apagado.
+- Dependencias validadas en ambos sentidos: no se enciende sin lo que requiere ni con configuración faltante (Login con Google sin credenciales), y no se apaga si otro encendido lo usa.
+- Puntos de corte: traits `BelongsToModule` (recursos y páginas: acceso, navegación y 404 en la ruta) y `WidgetBelongsToModule`, middleware `module:{key}`, directiva `@module`, y convenciones para campos (`->visible`) y tareas (`->when`). Ver `docs/modulos.md`.
+- Panel `superadmin`: página Módulos con interruptores (bloqueados con el motivo cuando corresponde) y los ajustes de cada módulo (Stock, Variantes, Cuotas propias, Catálogo web).
+- Comandos `modules:list`, `modules:enable {key|--all}` y `modules:disable {key}`. `composer demo` enciende todos los módulos posibles.
+- La suite corre con solo el núcleo y con todos los módulos encendidos (`composer test`, `TEST_MODULES=none|all`). Test de arquitectura: todo recurso, página y widget fuera del núcleo declara su módulo.
+- La versión en la barra superior tiene separación respecto del menú de usuario.
+
 ## 0.2.0 — Fase 1: usuarios y base del panel
 
 Requiere migración: sí (`users` suma `role`, `active`, `is_default_seller`, `google_id`; tablas `activity_logs` y `table_column_preferences`).

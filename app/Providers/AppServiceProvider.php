@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Enums\Module;
+use App\Services\Modules;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -11,6 +13,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(Modules::class);
     }
 
     /**
@@ -30,6 +33,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureFilamentDefaults();
         $this->registerVersionHooks();
+        $this->registerModuleDirective();
+    }
+
+    /**
+     * Directiva Blade de módulo: el bloque entre @module('stock') y @endmodule solo se muestra con el módulo encendido.
+     */
+    private function registerModuleDirective(): void
+    {
+        Blade::if('module', function (string $key): bool {
+            $module = Module::tryFrom($key);
+
+            return $module !== null && app(Modules::class)->enabled($module);
+        });
     }
 
     /**

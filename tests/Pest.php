@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\ModuleState;
+use App\Services\Modules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +46,11 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Deja todos los módulos apagados (estado limpio), sin importar TEST_MODULES.
+ */
+function resetModules(): void
 {
-    // ..
+    ModuleState::query()->delete();
+    app(Modules::class)->flush();
 }

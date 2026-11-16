@@ -50,13 +50,23 @@
             "@php artisan dev"
         ],
         "test": [
-            "@php artisan config:clear --ansi @no_additional_args",
-            "@php artisan test"
+            "@php artisan config:clear --ansi",
+            "@test:core",
+            "@test:all-modules"
+        ],
+        "test:core": [
+            "@putenv TEST_MODULES=none",
+            "@php artisan test --compact"
+        ],
+        "test:all-modules": [
+            "@putenv TEST_MODULES=all",
+            "@php artisan test --compact"
         ],
         "analyse": "phpstan analyse --memory-limit=1G",
         "lint": "pint",
         "demo": [
-            "@php artisan migrate:fresh --seed --force"
+            "@php artisan migrate:fresh --seed --force",
+            "@php artisan modules:enable --all"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
