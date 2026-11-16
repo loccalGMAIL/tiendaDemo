@@ -58,6 +58,16 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Fase 7)
+
+- **La demostración usa las acciones reales** (`CreateProduct`, `GenerateVariants`, `CountStock`, `CreateSale`, `CancelSale`, `CreateUser`): totales, stock, movimientos, eventos y actividad son los del sistema, no filas insertadas a mano. Solo los maestros sin regla de negocio (categorías, clientes) se crean directo.
+- **Solo lo de los módulos encendidos**, por eso corre después de `modules:enable --all`. Los módulos de las fases 8–12 suman su parte al mismo seeder.
+- **Sin azar**: catálogo y ventas son una lista fija, de modo que dos instalaciones de demostración quedan iguales. El stock inicial se calcula como lo que se va a vender más lo que debe quedar (con agotados y stock bajo a propósito), así nunca queda negativo.
+- **Seguridad**: se niega en producción (crea usuarios de prueba) y no corre si ya hay ventas. `DB::prohibitDestructiveCommands()` en producción.
+- **Fechas relativas a hoy** (mes actual, anterior y el previo), sin días futuros, para que el escritorio compare meses.
+- **Administrador de la demo**: el de `.env` si existe; si no, `admin@demo.test`. Vendedores `ana@demo.test` y `luis@demo.test` con `DEMO_PASSWORD`.
+- **`public/build` versionado**: actualizar un servidor no requiere Node. Hay que correr `npm run build` y commitear antes de cada versión.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

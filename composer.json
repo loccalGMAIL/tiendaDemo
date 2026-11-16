@@ -67,7 +67,15 @@
         "lint": "pint",
         "demo": [
             "@php artisan migrate:fresh --seed --force",
-            "@php artisan modules:enable --all"
+            "@php artisan modules:enable --all",
+            "@php artisan db:seed --class=DemoSeeder --force"
+        ],
+        "deploy": [
+            "composer install --no-dev --optimize-autoloader",
+            "@php artisan migrate --force",
+            "@php artisan storage:link --force",
+            "@php artisan optimize",
+            "@php artisan filament:optimize"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

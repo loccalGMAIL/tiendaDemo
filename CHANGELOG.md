@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0 — Fase 7: instalación rápida
+
+Requiere migración: no.
+
+- **`DemoSeeder`** (`composer demo`): tienda de ropa de ejemplo armada con las acciones reales del sistema — 12 productos en 5 categorías, 6 clientes, 25 ventas en tres meses con pagos combinados y dos anuladas, dos vendedores de prueba, contenido del sitio «Casa Lila». Solo arma lo de los módulos encendidos: variantes con Variantes; existencias, mínimos y movimientos con Stock; publicación, destacados, precio oculto, borrador e imágenes con Catálogo.
+- La demostración **no corre en producción** y **no hace nada si ya hay ventas**. En producción `migrate:fresh`, `db:wipe` y similares quedan prohibidos.
+- `composer demo` ahora es `migrate:fresh --seed` → `modules:enable --all` → `DemoSeeder`. Nuevo `composer deploy` para actualizar una instalación sin Node.
+- Nueva variable `DEMO_PASSWORD` (contraseña de los usuarios de demostración).
+- **`public/build` se versiona**: el servidor no compila.
+- **README de despliegue**: arquitectura, instalación local, variables, alta de un cliente, producción y actualización.
+
 ## 0.7.0 — Fase 6: catálogo web
 
 Requiere migración: sí (`products` suma `slug`, `is_published`, `is_featured`, `show_price`, `images`; los productos existentes reciben su slug).

@@ -6,7 +6,12 @@ return [
     | Versión semántica de la plataforma. Debe coincidir con CHANGELOG.md y el
     | tag de git.
     */
-    'version' => '0.7.0',
+    'version' => '0.8.0',
+
+    /*
+    | Contraseña de los usuarios de demostración (DemoSeeder). Solo para entornos de prueba.
+    */
+    'demo_password' => env('DEMO_PASSWORD', 'password'),
 
     /*
     | Ventas. Por defecto un vendedor ve solo sus ventas; con SELLER_SEES_ALL_SALES=true ve todas.

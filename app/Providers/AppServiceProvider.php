@@ -15,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // En producción no se pueden correr migrate:fresh, db:wipe ni similares por accidente.
+        DB::prohibitDestructiveCommands($this->app->isProduction());
+
         $this->configureFilamentDefaults();
         $this->registerVersionHooks();
         $this->registerModuleDirective();

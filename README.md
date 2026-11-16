@@ -1,58 +1,108 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Plataforma de gestión comercial
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plataforma modular para comercios, hecha con Laravel y Filament. **Una instalación por cliente**: cada negocio tiene su propia base de datos, su `.env` y sus tres dominios, y se le encienden solo los módulos que contrató.
 
-## About Laravel
+- Versión actual: ver `config/platform.php` y [`CHANGELOG.md`](CHANGELOG.md).
+- Plan y reglas del producto: [`PLAN-BASE.md`](PLAN-BASE.md). Decisiones de diseño: [`docs/decisiones.md`](docs/decisiones.md), [`docs/modulos.md`](docs/modulos.md) y [`docs/temas.md`](docs/temas.md).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Arquitectura en breve
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Tres dominios, una aplicación.** Ningún host está escrito en el código: salen del `.env`. Cualquier otro host responde 404.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Variable | Qué sirve |
+|---|---|
+| `LANDING_DOMAIN` | Sitio público: landing y catálogo web |
+| `PANEL_DOMAIN` | Panel del negocio (administrador y vendedores) |
+| `SUPERADMIN_DOMAIN` | Panel de la plataforma: módulos, tema y colores |
 
-## Learning Laravel
+**Roles.** Administrador y Vendedor son del cliente. El SuperAdmin es del proveedor: no aparece en ninguna lista del cliente.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Módulos.** El núcleo (clientes, categorías, productos, medios de pago, ventas de contado, escritorio) siempre está. Todo lo demás se enciende o apaga por instalación desde el panel de superadmin o con `php artisan modules:enable`. Apagar un módulo oculta la función y no borra datos.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Requisitos
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- PHP 8.3 con las extensiones habituales de Laravel y `bcmath`. `gd` es opcional: con ella la demostración genera imágenes de ejemplo.
+- MySQL 8 o similar.
+- Composer. Node solo para desarrollar: **`public/build` está versionado**, así que un servidor no necesita Node.
 
-## Agentic Development
+## Instalación local (Laragon u otro)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. Crear la base de datos vacía y clonar el repositorio.
+2. Hosts de desarrollo: los dominios `*.localhost` resuelven solos en los navegadores modernos (por ejemplo `negocio.localhost`, `app.negocio.localhost`, `plataforma.negocio.localhost`). Si el sistema no los resuelve, agregarlos al archivo `hosts`.
+3. `composer setup`: instala dependencias, crea el `.env` desde `.env.example`, genera la clave, migra, enlaza `storage` y compila los assets.
+4. Completar el `.env`: `APP_NAME`, base de datos, los tres dominios, `APP_URL` (el del panel) y los usuarios iniciales (`ADMIN_*` y `SUPERADMIN_*`).
+5. `php artisan db:seed`: crea el administrador, el superadmin y los medios de pago. Se puede repetir sin duplicar ni pisar lo que ya cambiaste.
+6. `php artisan serve --port=8000` (y `npm run dev` si vas a tocar el frontend), o `composer dev`. Abrir `http://app.negocio.localhost:8000`.
 
-```bash
-composer require laravel/boost --dev
+### Demostración con datos
 
-php artisan boost:install
+`composer demo` **borra la base**, la deja con datos de ejemplo de una tienda de ropa y enciende todos los módulos posibles:
+
+1. `migrate:fresh --seed`
+2. `modules:enable --all` (omite Login con Google si faltan sus credenciales)
+3. `db:seed --class=DemoSeeder`
+
+Deja 12 productos con variantes, stock, imágenes y catálogo publicado, 6 clientes, 25 ventas en tres meses (con pagos combinados y dos anuladas) y dos vendedores de prueba (`ana@demo.test` y `luis@demo.test`, contraseña `DEMO_PASSWORD`). El administrador es el del `.env`.
+
+La demostración usa las acciones reales del sistema, solo arma lo de los módulos encendidos, **no corre en producción** y no hace nada si ya hay ventas. En producción además `migrate:fresh` y `db:wipe` quedan prohibidos.
+
+## Variables del `.env`
+
+El archivo [`.env.example`](.env.example) está comentado. Las propias de la plataforma:
+
+| Variable | Para qué |
+|---|---|
+| `LANDING_DOMAIN`, `PANEL_DOMAIN`, `SUPERADMIN_DOMAIN` | Los tres hosts |
+| `TRUSTED_PROXIES` | Proxies de confianza (`*` detrás de un proxy propio) |
+| `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Administrador inicial |
+| `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` | SuperAdmin inicial |
+| `SELLER_SEES_ALL_SALES` | `false`: el vendedor ve solo sus ventas; `true`: ve todas |
+| `DEMO_PASSWORD` | Contraseña de los usuarios de demostración |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Módulo Login con Google; sin ellas no se puede habilitar |
+
+## Alta de un cliente nuevo
+
+1. Crear la base de datos y el `.env` (dominios, usuarios iniciales, credenciales de Google si aplica).
+2. `composer setup`.
+3. `php artisan db:seed`. Para mostrar el sistema con datos, `composer demo` (solo en un entorno de prueba).
+4. Habilitar los módulos según el abono: `php artisan modules:enable <módulo>` (o `--all`), o desde el panel de superadmin. `php artisan modules:list` muestra el estado.
+5. En el panel de superadmin: elegir tema y colores, subir logotipos, favicon y recursos gráficos.
+6. En el panel del negocio: nombre, textos y datos de contacto en *Configuración → Sitio*.
+7. Apuntar el DNS y el proxy a los tres dominios.
+
+## Despliegue en producción
+
+- `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, `LOG_LEVEL=warning`, los tres dominios reales y `APP_URL` con `https`.
+- Un proxy o servidor web con SSL delante de los tres dominios, todos apuntando a `public/`. Con proxy, configurar `TRUSTED_PROXIES`.
+- `php artisan storage:link` para servir las imágenes subidas (el servidor web tiene que seguir enlaces simbólicos).
+- Permisos de escritura en `storage/` y `bootstrap/cache/`.
+- Respaldos: la base de datos y `storage/app/public` (imágenes y logotipos) son lo único que no está en el repositorio.
+- No cargar la demostración: se niega a correr y `migrate:fresh` queda prohibido.
+
+## Actualizar una instalación
+
+Sin Node en el servidor, porque `public/build` viaja con el repositorio:
+
+```
+git fetch --tags && git checkout vX.Y.Z
+composer deploy
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`composer deploy` hace `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force`, `storage:link`, `optimize` y `filament:optimize`. Las migraciones son comunes a todos los clientes: no hay variantes por instalación. El `CHANGELOG.md` indica en cada versión si requiere migración.
 
-## Contributing
+## Pruebas y calidad
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Comando | Qué hace |
+|---|---|
+| `composer test` | La suite completa dos veces: solo con el núcleo y con todos los módulos encendidos |
+| `composer analyse` | Larastan, nivel 5 |
+| `composer lint` | Pint (formato) |
 
-## Code of Conduct
+Un cambio no se cierra con tests en rojo en ninguno de los dos modos.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Forma de trabajo
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Cada fase o versión va en una rama `fase-N`, con su entrada en `CHANGELOG.md`, la `version` de `config/platform.php` y un tag `vX.Y.Z`. Se mergea a `master` al cerrarla.
+- Antes del tag: `npm run build` y commitear `public/build`.
+- Archivos nuevos con `php artisan make:*`; tests con Pest en `tests/Feature/FaseN`.
+- No se borran tests ni se agregan dependencias sin aprobación.
