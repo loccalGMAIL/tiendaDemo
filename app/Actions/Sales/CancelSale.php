@@ -69,10 +69,11 @@ class CancelSale
                 $actor,
             );
 
+            // Dentro de la transacción: los módulos revierten sus efectos junto con la venta.
+            SaleCancelled::dispatch($locked, $actor);
+
             return $locked;
         });
-
-        SaleCancelled::dispatch($cancelled);
 
         return $cancelled;
     }

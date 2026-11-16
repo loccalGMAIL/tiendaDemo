@@ -120,6 +120,10 @@ class SaleForm
                                     Money::from(is_numeric($get('unit_price')) ? $get('unit_price') : null),
                                 ),
                             ))->columnSpan(2),
+                            Text::make(fn (Get $get): string => self::stockHint($get) ?? '')
+                                ->color(fn (Get $get): string => str_starts_with(self::stockHint($get) ?? '', 'Pediste') ? 'warning' : 'gray')
+                                ->visible(fn (Get $get): bool => self::stockHint($get) !== null)
+                                ->columnSpanFull(),
                         ]),
                 ]),
             Section::make('Cobro')
@@ -246,27 +250,63 @@ class SaleForm
     }
 
     /**
-     * Variantes vendibles. Con el módulo Variantes apagado solo existe la implícita de cada producto.
+     * Variantes vendibles (ver ProductVariant::sellable()). Con el módulo Stock se
+     * muestra la existencia de cada una.
      *
      * @return array<int, string>
      */
     public static function searchVariants(string $search): array
     {
+        $withStock = Modules::enabled(Module::Stock);
+
         return ProductVariant::query()
             ->with('product')
-            ->where('active', true)
-            ->whereHas('product', fn ($query) => $query
-                ->where('active', true)
-                ->when($search !== '', fn ($q) => $q->where(
-                    fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"),
-                )))
-            ->when(! Modules::enabled(Module::Variants), fn ($query) => $query->where('name', ''))
+            ->sellable()
+            ->when($search !== '', fn ($query) => $query->where(
+                fn ($q) => $q
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhereHas('product', fn ($product) => $product
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")),
+            ))
+            ->orderBy('product_id')
+            ->orderBy('position')
             ->limit(50)
             ->get()
             ->mapWithKeys(fn (ProductVariant $variant): array => [
-                $variant->getKey() => $variant->fullName().' · '.$variant->product->sku,
+                $variant->getKey() => $variant->fullName().' · '.($variant->sku ?? $variant->product->sku).($withStock ? ' · stock '.$variant->stock : ''),
             ])
             ->all();
+    }
+
+    /**
+     * Aviso de existencia bajo la fila de un ítem (módulo Stock). En modo "bloquear" la
+     * venta se rechaza si no alcanza; en "avisar" solo se advierte.
+     */
+    private static function stockHint(Get $get): ?string
+    {
+        if (! Modules::enabled(Module::Stock) || blank($get('variant_id'))) {
+            return null;
+        }
+
+        $variant = ProductVariant::query()->find($get('variant_id'));
+
+        if ($variant === null) {
+            return null;
+        }
+
+        $quantity = max(0, (int) $get('quantity'));
+
+        if ($quantity <= $variant->stock) {
+            return 'Stock disponible: '.$variant->stock;
+        }
+
+        $mode = Modules::setting(Module::Stock, 'on_no_stock', 'warn') === 'block'
+            ? 'La venta se rechazará si no alcanza.'
+            : 'Se vende igual y el stock queda en negativo.';
+
+        return "Pediste {$quantity} y hay {$variant->stock}. {$mode}";
     }
 
     private static function currentUser(): ?User

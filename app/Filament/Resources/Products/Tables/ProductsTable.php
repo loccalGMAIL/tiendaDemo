@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use App\Models\Category;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
@@ -45,6 +47,13 @@ class ProductsTable
                     ->money('ARS', locale: 'es_AR')
                     ->sortable()
                     ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isAdmin()),
+                // Existencia total del producto (suma de sus variantes): módulo Stock.
+                TextColumn::make('variants_sum_stock')
+                    ->label('Stock')
+                    ->sum('variants', 'stock')
+                    ->sortable()
+                    ->color(fn (mixed $state): ?string => (int) $state < 0 ? 'danger' : null)
+                    ->visible(fn (): bool => Modules::enabled(Module::Stock)),
                 IconColumn::make('active')
                     ->label('Activo')
                     ->boolean(),

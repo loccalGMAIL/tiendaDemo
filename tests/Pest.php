@@ -1,6 +1,11 @@
 <?php
 
+use App\Actions\Sales\CreateSale;
 use App\Models\ModuleState;
+use App\Models\PaymentMethod;
+use App\Models\ProductVariant;
+use App\Models\Sale;
+use App\Models\User;
 use App\Services\Modules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -49,6 +54,16 @@ expect()->extend('toBeOne', function () {
 /**
  * Deja todos los módulos apagados (estado limpio), sin importar TEST_MODULES.
  */
+function sellVariant(User $actor, ProductVariant $variant, int $quantity = 1): Sale
+{
+    $method = PaymentMethod::query()->first() ?? PaymentMethod::factory()->create();
+
+    return app(CreateSale::class)->handle($actor, [
+        'items' => [['variant_id' => $variant->id, 'quantity' => $quantity]],
+        'payments' => [['payment_method_id' => $method->id]],
+    ]);
+}
+
 function resetModules(): void
 {
     ModuleState::query()->delete();

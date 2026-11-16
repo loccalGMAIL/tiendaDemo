@@ -1,19 +1,26 @@
 <?php
 
 use App\Filament\Concerns\BelongsToModule;
+use App\Filament\Concerns\RelationManagerBelongsToModule;
 use App\Filament\Concerns\WidgetBelongsToModule;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\StockCount;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Filament\Resources\Sales\SaleResource;
+use App\Filament\Resources\StockMovements\StockMovementResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Widgets\LatestSales;
+use App\Filament\Widgets\LowStockTable;
 use App\Filament\Widgets\SalesOverview;
+use App\Filament\Widgets\StockOverview;
 use Filament\Pages\Page;
 use Filament\Resources\Pages\Page as ResourcePage;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Widgets\Widget;
 use Symfony\Component\Finder\Finder;
@@ -66,8 +73,9 @@ function adminFilamentClasses(): array
         $isResource = $reflection->isSubclassOf(Resource::class);
         $isStandalonePage = $reflection->isSubclassOf(Page::class) && ! $reflection->isSubclassOf(ResourcePage::class);
         $isWidget = $reflection->isSubclassOf(Widget::class);
+        $isRelationManager = $reflection->isSubclassOf(RelationManager::class);
 
-        if ($isResource || $isStandalonePage || $isWidget) {
+        if ($isResource || $isStandalonePage || $isWidget || $isRelationManager) {
             $classes[] = $class;
         }
     }
@@ -75,8 +83,16 @@ function adminFilamentClasses(): array
     return $classes;
 }
 
-it('encuentra los recursos del núcleo (la prueba no es vacía)', function () {
-    expect(adminFilamentClasses())->toContain(UserResource::class, ActivityLogResource::class);
+it('encuentra los recursos del núcleo y los de los módulos (la prueba no es vacía)', function () {
+    expect(adminFilamentClasses())->toContain(
+        UserResource::class,
+        ActivityLogResource::class,
+        StockMovementResource::class,
+        StockCount::class,
+        StockOverview::class,
+        LowStockTable::class,
+        VariantsRelationManager::class,
+    );
 });
 
 it('todo recurso, página y widget fuera del núcleo declara su módulo', function () {
@@ -87,8 +103,11 @@ it('todo recurso, página y widget fuera del núcleo declara su módulo', functi
             continue;
         }
 
-        $trait = is_subclass_of($class, Widget::class) ? WidgetBelongsToModule::class : BelongsToModule::class;
-        $methods = $trait === WidgetBelongsToModule::class ? ['canView'] : ['canAccess', 'shouldRegisterNavigation'];
+        [$trait, $methods] = match (true) {
+            is_subclass_of($class, Widget::class) => [WidgetBelongsToModule::class, ['canView']],
+            is_subclass_of($class, RelationManager::class) => [RelationManagerBelongsToModule::class, ['canViewForRecord']],
+            default => [BelongsToModule::class, ['canAccess', 'shouldRegisterNavigation']],
+        };
 
         if (! in_array($trait, class_uses_recursive($class), true)) {
             $offenders[] = "$class no usa ".class_basename($trait);

@@ -25,12 +25,21 @@ Cada tipo de cosa se corta en un solo lugar. Cuando un recurso, página, ruta o 
 |---|---|
 | Recursos y páginas de Filament | `use BelongsToModule;` y `protected static function module(): Module`. Oculta la navegación, bloquea el acceso y la ruta responde 404. Las policies siguen aplicando encima. No redefinir `canAccess()` ni `shouldRegisterNavigation()` en la clase: taparía el corte (lo verifica el test de arquitectura). |
 | Widgets de Filament | `use WidgetBelongsToModule;` y `module()`. Maneja `canView()`. |
+| Relation managers de Filament | `use RelationManagerBelongsToModule;` y `module()`. Maneja `canViewForRecord()`. |
 | Rutas | `->middleware('module:stock')`: 404 con el módulo apagado o con una clave inexistente. |
 | Blade | `@module('stock') … @endmodule` |
 | Campos y columnas de otro módulo | `->visible(fn () => Modules::enabled(Module::Stock))` |
 | Tareas programadas | `->when(fn () => Modules::enabled(Module::Stock))` |
 
 Las acciones de negocio del núcleo no llaman directamente a un módulo: preguntan `Modules::enabled()` o disparan un evento que el módulo escucha. Las columnas que un módulo agrega a una tabla del núcleo existen siempre y son opcionales.
+
+### Páginas y widgets solo para el administrador
+
+Como el trait del módulo ocupa `canAccess()` / `canView()`, lo que además es solo del administrador extiende una base que lo resuelve (`AdministratorPage`, `AdministratorStatsWidget`, `AdministratorTableWidget`) y suma el trait del módulo: `class StockCount extends AdministratorPage { use BelongsToModule; … }`.
+
+## Cómo reacciona un módulo a la venta
+
+El núcleo no llama a los módulos: dispara eventos. `SaleCreated` y `SaleCancelled` (con la venta y el usuario que actúa) se disparan **dentro de la transacción** de `CreateSale` / `CancelSale`. Un listener sincrónico en `app/Listeners` (auto-descubierto) hace el efecto del módulo; si lanza una excepción (por ejemplo `ValidationException` cuando Stock está en modo bloquear), la venta completa se revierte. Cada listener empieza con `if (! Modules::enabled(...)) return;`, salvo los que deben revertir lo ya registrado (la devolución de stock mira los movimientos de esa venta, no el estado del módulo).
 
 ## Cómo agregar un módulo
 
@@ -43,4 +52,4 @@ Las acciones de negocio del núcleo no llaman directamente a un módulo: pregunt
 
 La suite tiene que pasar con solo el núcleo y con todos los módulos encendidos. `composer test` corre las dos pasadas (`TEST_MODULES=none` y `TEST_MODULES=all`); `composer test:core` y `composer test:all-modules` corren una sola. Los tests de módulos parten de estado limpio con `resetModules()`.
 
-El test `ArquitecturaTest` falla si aparece un recurso, página o widget del panel `admin` que no figure en la lista del núcleo (`UserResource`, `ActivityLogResource`) y no use el trait de su módulo.
+El test `ArquitecturaTest` falla si aparece un recurso, página, widget o relation manager del panel `admin` que no figure en la lista del núcleo y no use el trait de su módulo (ni lo redefina).

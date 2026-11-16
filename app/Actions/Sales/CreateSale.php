@@ -43,11 +43,7 @@ class CreateSale
      */
     public function handle(User $actor, array $data): Sale
     {
-        $sale = DB::transaction(fn (): Sale => $this->create($actor, $data));
-
-        SaleCreated::dispatch($sale);
-
-        return $sale;
+        return DB::transaction(fn (): Sale => $this->create($actor, $data));
     }
 
     /**
@@ -136,7 +132,13 @@ class CreateSale
             $actor,
         );
 
-        return $sale->load(['items', 'payments']);
+        $sale->load(['items', 'payments']);
+
+        // Dentro de la transacción: si un módulo rechaza la venta (p. ej. Stock en modo
+        // bloquear), se revierte todo.
+        SaleCreated::dispatch($sale, $actor);
+
+        return $sale;
     }
 
     /**

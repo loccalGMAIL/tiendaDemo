@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 — Fase 4: Stock y Variantes
+
+Requiere migración: sí (`product_variants.stock` y `min_stock`; tabla `stock_movements`).
+
+- **Variantes** (módulo): tabla de variantes en el producto con generación por combinación de atributos (S, M, L × Negro, Blanco = 6; no duplica las existentes), SKU y precio propio o heredado, y activar/desactivar. Una variante con ventas o movimientos no se borra. Con el módulo apagado cada producto tiene solo su variante implícita; con él encendido la implícita no se ofrece si el producto tiene variantes con nombre (`ProductVariant::sellable()`).
+- **Stock** (módulo): existencias por variante, historial inmutable de movimientos (`stock_movements`, con motivo), ajuste manual y **Carga de stock** por grilla (stock inicial y recuentos, un ajuste por cada diferencia), stock mínimo, valor del stock y productos con stock bajo en el escritorio (solo administrador), existencia visible al vender, y columna Stock en Productos.
+- La venta descuenta el stock y la anulación lo devuelve con movimientos propios. Por defecto **avisa** y deja el stock en negativo; con el ajuste **bloquear** rechaza la venta que no alcanza sin dejar nada a medias. El panel superadmin advierte cuántas variantes están en negativo antes de bloquear.
+- Los eventos `SaleCreated` y `SaleCancelled` se disparan **dentro de la transacción** de la venta (con el usuario que actúa): si un módulo rechaza, se revierte todo. Anular revierte exactamente lo que descontó la venta, aunque el módulo se haya apagado después.
+- `LogsActivity` puede omitir registros y atributos que ya tienen historial propio (el stock no llena la actividad).
+- Trait `RelationManagerBelongsToModule` y bases `AdministratorPage`, `AdministratorStatsWidget` y `AdministratorTableWidget` para lo que solo ve el administrador. El test de arquitectura ahora recorre también los relation managers.
+
 ## 0.4.0 — Fase 3: núcleo comercial
 
 Requiere migración: sí (`customers`, `categories`, `products`, `product_variants`, `payment_methods`, `sales`, `sale_items`, `payments`). `db:seed` carga los medios de pago iniciales.

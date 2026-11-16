@@ -3,6 +3,7 @@
 namespace App\Filament\Superadmin\Schemas;
 
 use App\Enums\Module;
+use App\Models\ProductVariant;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -32,7 +33,16 @@ class ModuleSettingsForm
                     ])
                     ->required()
                     ->native(false)
-                    ->helperText('Conviene dejarlo en «Avisar» hasta terminar el primer recuento de stock.'),
+                    ->live()
+                    ->helperText(function (Get $get): string {
+                        $negative = ProductVariant::query()->where('stock', '<', 0)->count();
+
+                        if ($get('on_no_stock') === 'block' && $negative > 0) {
+                            return "Atención: hay {$negative} variantes con stock negativo. Conviene corregirlas con la carga de stock antes de bloquear las ventas.";
+                        }
+
+                        return 'Conviene dejarlo en «Avisar» hasta terminar el primer recuento de stock.';
+                    }),
             ],
             Module::Variants => [
                 Repeater::make('attributes')

@@ -9,6 +9,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Resources\Resource;
 use Filament\Support\Facades\FilamentView;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
@@ -53,6 +54,9 @@ class AppServiceProvider extends ServiceProvider
      */
     private function configureFilamentDefaults(): void
     {
+        // Los títulos de los recursos van como se escriben en español («Medios de pago»), no en Title Case.
+        Resource::titleCaseModelLabel(false);
+
         // Todas las columnas de todas las tablas se pueden ocultar.
         Column::configureUsing(fn (Column $column) => $column->toggleable());
 

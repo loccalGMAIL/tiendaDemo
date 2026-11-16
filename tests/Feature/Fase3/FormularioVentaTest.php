@@ -203,12 +203,12 @@ it('el producto se busca por nombre o SKU y solo aparecen los activos', function
     $bySku = SaleForm::searchVariants('REM-1');
 
     expect($byName)->toHaveCount(1)
-        ->and(array_values($byName)[0])->toBe('Remera lisa · REM-1')
+        ->and(array_values($byName)[0])->toStartWith('Remera lisa · REM-1')
         ->and($bySku)->toHaveKey($this->variant->id)
         ->and(SaleForm::searchVariants('no-existe'))->toBe([]);
 });
 
-it('con Variantes apagado solo se ofrecen las variantes implícitas', function () {
+it('con Variantes apagado solo se ofrecen las implícitas y con Variantes encendido las que tienen nombre', function () {
     resetModules();
     $named = $this->product->variants()->create(['name' => 'M / Negro', 'position' => 1]);
 
@@ -216,5 +216,6 @@ it('con Variantes apagado solo se ofrecen las variantes implícitas', function (
 
     Modules::enable(Module::Variants);
 
-    expect(SaleForm::searchVariants(''))->toHaveKey($this->variant->id)->toHaveKey($named->id);
+    // Con variantes cargadas, la implícita deja de ofrecerse.
+    expect(SaleForm::searchVariants(''))->toHaveKey($named->id)->not->toHaveKey($this->variant->id);
 });

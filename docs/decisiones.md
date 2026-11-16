@@ -30,6 +30,14 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Clientes y productos con ventas** no se borran (se desactivan); lo mismo vale para usuarios con operaciones y medios de pago ya usados.
 - **Variantes:** todo producto tiene su variante implícita. El formulario de venta ofrece solo las implícitas mientras el módulo Variantes esté apagado.
 
+## Decisiones de diseño (Fase 4)
+
+- **Eventos dentro de la transacción:** el stock se descuenta (y, en modo bloquear, se valida) junto con la venta; si no alcanza, no queda ni la venta, ni los cobros, ni movimientos.
+- **Anular revierte lo registrado:** se devuelve exactamente lo que descontó esa venta. Una venta hecha con Stock apagado no suma stock al anularse.
+- **Variante implícita:** con el módulo Variantes apagado es la única que se ofrece; con él encendido, solo se ofrece si el producto no tiene variantes con nombre.
+- **Stock:** unidades enteras; lo contado o ajustado no puede ser negativo (solo las ventas en modo «avisar» lo dejan en negativo). Stock bajo = mínimo mayor que 0 y existencia menor o igual al mínimo. El movimiento guarda también el motivo.
+- **Valor del stock y stock bajo** del escritorio solo los ve el administrador (muestran costos).
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

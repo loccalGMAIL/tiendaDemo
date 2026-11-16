@@ -18,6 +18,10 @@ trait LogsActivity
     public static function bootLogsActivity(): void
     {
         static::created(function (self $model): void {
+            if (! $model->activityEnabled()) {
+                return;
+            }
+
             app(ActivityLogger::class)->log(
                 ActivityEvent::Created,
                 'Alta de '.$model->activitySubjectLabel().': '.$model->activityName(),
@@ -27,8 +31,11 @@ trait LogsActivity
         });
 
         static::updated(function (self $model): void {
-            $changes = $model->getChanges();
-            unset($changes['updated_at']);
+            if (! $model->activityEnabled()) {
+                return;
+            }
+
+            $changes = array_diff_key($model->getChanges(), array_flip(['updated_at', ...$model->activityIgnoredAttributes()]));
 
             if ($changes === []) {
                 return;
@@ -56,6 +63,10 @@ trait LogsActivity
         });
 
         static::deleted(function (self $model): void {
+            if (! $model->activityEnabled()) {
+                return;
+            }
+
             app(ActivityLogger::class)->log(
                 ActivityEvent::Deleted,
                 'Baja de '.$model->activitySubjectLabel().': '.$model->activityName(),
@@ -70,6 +81,25 @@ trait LogsActivity
         return strtolower(class_basename($this));
     }
 
+    /**
+     * Permite que un modelo omita ciertos registros (p. ej. la variante implícita de un producto).
+     */
+    protected function activityEnabled(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Atributos que cambian por operaciones del sistema y ya tienen su propio historial
+     * (p. ej. el stock): sus cambios no se registran en la actividad.
+     *
+     * @return list<string>
+     */
+    protected function activityIgnoredAttributes(): array
+    {
+        return [];
+    }
+
     protected function activityName(): string
     {
         return (string) ($this->getAttribute('name') ?? '#'.$this->getKey());
@@ -81,7 +111,7 @@ trait LogsActivity
      */
     protected function loggableAttributes(array $attributes): array
     {
-        $excluded = array_merge($this->getHidden(), ['password', 'remember_token', 'updated_at', 'created_at']);
+        $excluded = array_merge($this->getHidden(), $this->activityIgnoredAttributes(), ['password', 'remember_token', 'updated_at', 'created_at']);
 
         return array_diff_key($attributes, array_flip($excluded));
     }
