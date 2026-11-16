@@ -29,6 +29,10 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="LANDING_DOMAIN" value="tiendademo.localhost"/>
+        <env name="PANEL_DOMAIN" value="app.tiendademo.localhost"/>
+        <env name="SUPERADMIN_DOMAIN" value="plataforma.tiendademo.localhost"/>
+        <env name="TRUSTED_PROXIES" value="*"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
