@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Vista previa del tema Boutique">
+  <rect width="320" height="200" fill="#faf7f2"/>
+  <rect width="320" height="120" fill="#14110f"/>
+  <rect x="12" y="9" width="46" height="8" rx="2" fill="#d4af37"/>
+  <rect x="236" y="9" width="70" height="8" rx="2" fill="#f5efe6" opacity=".6"/>
+  <rect x="80" y="44" width="160" height="14" rx="3" fill="#f5efe6"/>
+  <rect x="104" y="64" width="112" height="6" rx="3" fill="#f5efe6" opacity=".5"/>
+  <rect x="127" y="86" width="66" height="18" rx="2" fill="#d4af37"/>
+  <rect x="24" y="138" width="86" height="46" rx="2" fill="#efe7da"/>
+  <rect x="124" y="138" width="86" height="46" rx="2" fill="#efe7da"/>
+  <rect x="224" y="138" width="72" height="46" rx="2" fill="#efe7da"/>
+</svg>

@@ -2,13 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Providers\Filament\Concerns\ConfiguresBranding;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -18,9 +18,11 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    use ConfiguresBranding;
+
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return $this->branded($panel)
             ->default()
             ->id('admin')
             ->domain(config('domains.panel'))
@@ -28,9 +30,6 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->profile()
-            ->colors([
-                'primary' => Color::Amber,
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             // Escritorio propio (App\Filament\Pages\Dashboard) y widgets del núcleo y de los módulos.
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

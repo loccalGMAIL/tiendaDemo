@@ -3,7 +3,9 @@
 use App\Filament\Concerns\BelongsToModule;
 use App\Filament\Concerns\RelationManagerBelongsToModule;
 use App\Filament\Concerns\WidgetBelongsToModule;
+use App\Filament\Pages\ColorSettings;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\SiteSettings;
 use App\Filament\Pages\StockCount;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Filament\Resources\Categories\CategoryResource;
@@ -45,6 +47,8 @@ const CORE_FILAMENT_CLASSES = [
     Dashboard::class,
     SalesOverview::class,
     LatestSales::class,
+    // Fase 5: contenido del sitio (siempre disponible para el administrador)
+    SiteSettings::class,
 ];
 
 /**
@@ -89,6 +93,7 @@ it('encuentra los recursos del núcleo y los de los módulos (la prueba no es va
         ActivityLogResource::class,
         StockMovementResource::class,
         StockCount::class,
+        ColorSettings::class,
         StockOverview::class,
         LowStockTable::class,
         VariantsRelationManager::class,

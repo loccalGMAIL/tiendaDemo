@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+@source '../../views/landings/clasico/**/*.blade.php';
+@source '../../views/landings/partials/**/*.blade.php';
+
+/*
+ * Tema Clásico: claro, limpio y con mucho aire.
+ * Los colores salen de la combinación elegida (variables --brand, --surface, … que
+ * inyecta la landing), así cambiar de combinación no requiere recompilar.
+ */
+@theme inline {
+    --color-brand: var(--brand);
+    --color-on-brand: var(--on-brand);
+    --color-accent: var(--accent);
+    --color-surface: var(--surface);
+    --color-ink: var(--text);
+    --font-sans: var(--font-body);
+    --font-display: var(--font-heading);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--surface);
+        color: var(--text);
+        font-family: var(--font-body);
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-heading);
+    }
+}

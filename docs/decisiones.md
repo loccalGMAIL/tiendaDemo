@@ -38,6 +38,16 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Stock:** unidades enteras; lo contado o ajustado no puede ser negativo (solo las ventas en modo «avisar» lo dejan en negativo). Stock bajo = mínimo mayor que 0 y existencia menor o igual al mínimo. El movimiento guarda también el motivo.
 - **Valor del stock y stock bajo** del escritorio solo los ve el administrador (muestran costos).
 
+## Decisiones de diseño (Fase 5)
+
+- **Dos temas reales:** *Clásico* (claro y limpio) y *Boutique* (portada oscura, tipografía con serifas), cada uno con cuatro combinaciones de colores. Ver `docs/temas.md`.
+- **Contenido y apariencia en la base** (`settings`), no en el `.env`: el administrador edita el contenido y el SuperAdmin elige el tema sin tocar el servidor.
+- **Sin descargas de fuentes ni paquetes nuevos:** cada tema declara su pila tipográfica; el panel aplica la del tema solo a los títulos.
+- **Contraste verificado por test** (WCAG AA, 4,5) para cada combinación, en claro y en oscuro.
+- **La sección Catálogo de la landing** muestra las categorías activas con el módulo Catálogo encendido; los productos y enlaces llegan con la Fase 6.
+- **El logo del acceso** es opcional (si no hay, se usa el logo claro); sin ningún logo se muestra el nombre del negocio.
+- Los cambios de contenido del sitio quedan en la actividad con antes y después; la apariencia (cosa del SuperAdmin) no.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

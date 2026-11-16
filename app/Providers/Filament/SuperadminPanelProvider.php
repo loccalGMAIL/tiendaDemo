@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Providers\Filament\Concerns\ConfiguresBranding;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -9,7 +10,6 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -21,18 +21,17 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class SuperadminPanelProvider extends PanelProvider
 {
+    use ConfiguresBranding;
+
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return $this->branded($panel)
             ->id('superadmin')
             ->domain(config('domains.superadmin'))
             ->path('')
             ->login()
             ->profile()
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->colors([
-                'primary' => Color::Amber,
-            ])
             ->discoverResources(in: app_path('Filament/Superadmin/Resources'), for: 'App\Filament\Superadmin\Resources')
             ->discoverPages(in: app_path('Filament/Superadmin/Pages'), for: 'App\Filament\Superadmin\Pages')
             ->pages([

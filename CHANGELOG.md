@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 — Fase 5: sitio, apariencia y temas
+
+Requiere migración: sí (tabla `settings`). Requiere `php artisan storage:link` (lo hace `composer setup`) y `npm run build`.
+
+- **Temas** (`config/themes.php`): *Clásico* y *Boutique*, con vistas de landing, hoja de estilos y vista previa propias, y cuatro combinaciones de colores cada uno. Se compilan siempre: cambiar de tema no requiere compilar. Contraste de cada combinación verificado por test (WCAG AA).
+- **Landing** por secciones (portada, por qué elegirnos, catálogo, preguntas frecuentes, contacto), cada una activable y oculta si no tiene contenido. Botón «Ingresar al sistema» hacia el panel conservando esquema y puerto; título, favicon e imagen para compartir.
+- **Apariencia** (panel `superadmin`): tema, combinación de colores, logos (fondo claro, fondo oscuro y acceso), favicon, imagen para compartir y recursos gráficos del tema. Los archivos van al disco `public`.
+- **Sitio** (panel `admin` → Configuración → Sitio): nombre, lema, portada, puntos a destacar, preguntas frecuentes, contacto, redes y secciones visibles. Los cambios quedan en la actividad con antes y después.
+- **Colores** (módulo *Colores personalizables*, Configuración → Colores): el administrador elige entre las combinaciones del tema actual, con vista previa; sin selector libre.
+- Los paneles toman el nombre, los logos, el favicon, el color principal y la tipografía de los títulos de la base, sin recompilar. Sin logo se muestra el nombre del negocio.
+- `Settings` (ajustes cacheados), `Appearance`, `SiteContent` y `Contrast` (servicios); `docs/temas.md`.
+
 ## 0.5.0 — Fase 4: Stock y Variantes
 
 Requiere migración: sí (`product_variants.stock` y `min_stock`; tabla `stock_movements`).

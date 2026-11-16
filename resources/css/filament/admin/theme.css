@@ -4,6 +4,16 @@
 @source '../../../../resources/views/filament/**/*';
 
 /*
+ * Tipografía de los títulos según el tema elegido (la variable la inyecta el panel);
+ * la estructura del panel no cambia con el tema.
+ */
+.fi-header-heading,
+.fi-simple-header-heading,
+.fi-section-header-heading {
+    font-family: var(--theme-heading-font, inherit);
+}
+
+/*
  * Tablas compactas en todo el panel: menos aire vertical en encabezados y filas.
  * El relleno de las filas vive en el elemento raíz de cada columna (texto, ícono, badge…).
  */
