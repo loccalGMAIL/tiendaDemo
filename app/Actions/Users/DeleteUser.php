@@ -15,7 +15,11 @@ class DeleteUser
             ]);
         }
 
-        // Fase 3: si el usuario tiene operaciones registradas, no se borra: se desactiva.
+        if ($user->hasOperations()) {
+            throw ValidationException::withMessages([
+                'user' => 'Tiene operaciones registradas: desactivalo en lugar de borrarlo.',
+            ]);
+        }
 
         $user->delete();
     }

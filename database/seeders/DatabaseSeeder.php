@@ -9,10 +9,14 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      *
-     * Los medios de pago llegan con la Fase 3.
+     * No enciende módulos: en un cliente nuevo se habilitan según su abono
+     * (modules:enable). Los datos de demostración llegan con la Fase 7.
      */
     public function run(): void
     {
-        $this->call(InitialUsersSeeder::class);
+        $this->call([
+            InitialUsersSeeder::class,
+            PaymentMethodSeeder::class,
+        ]);
     }
 }

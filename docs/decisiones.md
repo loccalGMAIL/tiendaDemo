@@ -19,6 +19,17 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 | Login con Google | Sin credenciales por ahora (módulo apagado) |
 | Defaults | `es_AR`, pesos argentinos, `America/Argentina/Buenos_Aires`, MySQL |
 
+## Decisiones de diseño (Fase 3)
+
+- **Pago combinado:** una venta admite varios cobros; la suma de los montos base tiene que dar el subtotal. Con un solo medio de pago el monto es el subtotal.
+- **Redondeo:** los recargos y descuentos se redondean a centavos con la mitad hacia afuera del cero (3,33 × 15 % = 0,4995 → 0,50; −10,005 → −10,01).
+- **Precio:** sale del catálogo (variante, o producto si la variante no tiene propio). Solo un administrador puede indicar otro precio al vender.
+- **Vendedor ve solo sus ventas:** configurable por instalación con `SELLER_SEES_ALL_SALES` en el `.env` (por defecto `false`).
+- **Medios de pago iniciales** (`PaymentMethodSeeder`, editables desde el panel): Efectivo −10 %, Transferencia 0 %, Débito 0 %, Tarjeta 1 cuota 0 %, Tarjeta 3 cuotas +15 %, Tarjeta 6 cuotas +30 %.
+- **Cobros sueltos** (sin venta) no existen hasta el módulo Cuenta corriente (Fase 8): sin saldo no hay nada que cobrar aparte de la venta.
+- **Clientes y productos con ventas** no se borran (se desactivan); lo mismo vale para usuarios con operaciones y medios de pago ya usados.
+- **Variantes:** todo producto tiene su variante implícita. El formulario de venta ofrece solo las implícitas mientras el módulo Variantes esté apagado.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

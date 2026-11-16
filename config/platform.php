@@ -6,7 +6,14 @@ return [
     | Versión semántica de la plataforma. Debe coincidir con CHANGELOG.md y el
     | tag de git.
     */
-    'version' => '0.3.0',
+    'version' => '0.4.0',
+
+    /*
+    | Ventas. Por defecto un vendedor ve solo sus ventas; con SELLER_SEES_ALL_SALES=true ve todas.
+    */
+    'sales' => [
+        'seller_sees_all' => (bool) env('SELLER_SEES_ALL_SALES', false),
+    ],
 
     /*
     | Usuarios iniciales que crea el seeder (se puede correr varias veces).

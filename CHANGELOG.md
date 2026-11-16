@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — Fase 3: núcleo comercial
+
+Requiere migración: sí (`customers`, `categories`, `products`, `product_variants`, `payment_methods`, `sales`, `sale_items`, `payments`). `db:seed` carga los medios de pago iniciales.
+
+- Clientes, categorías (slug automático), productos y medios de pago, con su actividad antes y después y las policies del plan (el vendedor ve clientes y productos, da de alta clientes y no ve costos).
+- Productos: SKU automático `PROD-00001…` cuando viene vacío y variante implícita en todo producto (`CreateProduct`).
+- Ventas de contado (`CreateSale`): precio, costo y descripción copiados al vender; cada cobro copia cuotas y porcentaje del medio de pago; recargo o descuento redondeado a centavos (mitad hacia afuera del cero); pago combinado con la suma de bases igual al subtotal; la venta nace pagada. Aritmética con `bcmath` (`Money`) y cálculo puro compartido con la vista previa del formulario (`SaleCalculator`).
+- Anulación con motivo obligatorio (`CancelSale`): solo administradores, una sola vez, revierte los cobros y deja quién, cuándo y por qué. Eventos `SaleCreated` y `SaleCancelled` para los módulos.
+- Una venta confirmada no se edita ni se borra. Numeración visible `V-00001` y `C-00001`.
+- El vendedor ve solo sus ventas (`SELLER_SEES_ALL_SALES` para verlas todas), no cambia el precio ni anula.
+- Formulario de venta con alta rápida de cliente (y de producto para administradores), vendedor por defecto propuesto y resumen en vivo. Vista de venta con la acción Anular.
+- Escritorio con ventas del mes contra el anterior, cobrado del mes, últimas ventas y acceso a Nueva venta.
+- Un usuario con ventas, cobros o anulaciones no se borra: se desactiva (cierra el pendiente de la Fase 1).
+- `PaymentMethodSeeder`: Efectivo −10 %, Transferencia, Débito, Tarjeta 1, 3 (+15 %) y 6 cuotas (+30 %).
+
 ## 0.3.0 — Fase 2: módulos y panel superadmin
 
 Requiere migración: sí (tabla `modules`).

@@ -28,6 +28,9 @@ class UserPolicy
 
     public function delete(User $user, User $model): bool
     {
-        return $user->isAdmin() && ! $model->isSuperAdmin() && ! $user->is($model);
+        return $user->isAdmin()
+            && ! $model->isSuperAdmin()
+            && ! $user->is($model)
+            && ! $model->hasOperations();
     }
 }

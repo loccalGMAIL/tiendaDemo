@@ -2,8 +2,16 @@
 
 use App\Filament\Concerns\BelongsToModule;
 use App\Filament\Concerns\WidgetBelongsToModule;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
+use App\Filament\Resources\Categories\CategoryResource;
+use App\Filament\Resources\Customers\CustomerResource;
+use App\Filament\Resources\PaymentMethods\PaymentMethodResource;
+use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Sales\SaleResource;
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Widgets\LatestSales;
+use App\Filament\Widgets\SalesOverview;
 use Filament\Pages\Page;
 use Filament\Resources\Pages\Page as ResourcePage;
 use Filament\Resources\Resource;
@@ -18,8 +26,18 @@ use Tests\Fixtures\StockWidget;
  * algo acá es una decisión consciente; todo lo demás tiene que declarar su módulo.
  */
 const CORE_FILAMENT_CLASSES = [
+    // Fase 1
     UserResource::class,
     ActivityLogResource::class,
+    // Fase 3: núcleo comercial
+    CustomerResource::class,
+    CategoryResource::class,
+    ProductResource::class,
+    PaymentMethodResource::class,
+    SaleResource::class,
+    Dashboard::class,
+    SalesOverview::class,
+    LatestSales::class,
 ];
 
 /**

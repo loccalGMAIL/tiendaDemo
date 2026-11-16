@@ -77,6 +77,16 @@ class User extends Authenticatable implements FilamentUser
         return $query->where('role', '!=', Role::SuperAdmin->value);
     }
 
+    /**
+     * Un usuario con operaciones registradas (ventas, cobros o anulaciones) no
+     * se borra: se desactiva.
+     */
+    public function hasOperations(): bool
+    {
+        return Sale::query()->where('seller_id', $this->getKey())->orWhere('cancelled_by', $this->getKey())->exists()
+            || Payment::query()->where('collected_by', $this->getKey())->orWhere('cancelled_by', $this->getKey())->exists();
+    }
+
     protected function activitySubjectLabel(): string
     {
         return 'usuario';
