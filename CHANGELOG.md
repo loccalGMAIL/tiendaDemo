@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.1 — Portada y marca
+
+Requiere migración: no.
+
+- **Logos más grandes**: en el panel el logo pasa de 24 a 40 px de alto y en la pantalla de acceso a 112 px; en la landing, de 32 a 48 px (36 px en el celular) en los dos temas.
+- **«Ingresar al sistema» solo en la barra**: se quitó de la portada y del pie. En la barra pasa a ser un botón de borde y en el celular dice «Ingresar».
+- **Botón «Catálogo» destacado**: es el botón principal de la barra y se ve también en el celular (antes se ocultaba con el resto del menú).
+- **Portada del tema Clásico**: en lugar del recuadro de color, pasa las fotos de los productos destacados (hasta 8) con un fundido y un acercamiento suave, solo con CSS; cada foto muestra el nombre y enlaza a la ficha. Con una sola foto queda fija; si hay una imagen de portada cargada en Apariencia se muestra esa; respeta «reducir movimiento».
+- `public/build` recompilado.
+
 ## 0.8.0 — Fase 7: instalación rápida
 
 Requiere migración: no.

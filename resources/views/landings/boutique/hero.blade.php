@@ -10,16 +10,12 @@
             <p class="mx-auto mt-6 max-w-xl text-lg opacity-80">{{ $subtitle }}</p>
         @endif
 
-        <div class="mt-10 flex flex-wrap justify-center gap-4">
-            <a href="{{ $panelUrl }}" class="bg-brand px-8 py-3 text-sm uppercase tracking-widest text-on-brand hover:opacity-90">
-                Ingresar al sistema
-            </a>
-
-            @if ($whatsapp = $siteContent->whatsappUrl('Hola, quería hacer una consulta'))
+        @if ($whatsapp = $siteContent->whatsappUrl('Hola, quería hacer una consulta'))
+            <div class="mt-10 flex flex-wrap justify-center gap-4">
                 <a href="{{ $whatsapp }}" class="border border-night-ink/40 px-8 py-3 text-sm uppercase tracking-widest hover:border-brand hover:text-brand" rel="noopener">
                     WhatsApp
                 </a>
-            @endif
-        </div>
+            </div>
+        @endif
     </div>
 </section>

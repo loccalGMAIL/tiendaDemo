@@ -423,6 +423,48 @@ it('la sección Catálogo de la landing muestra categorías con enlace y solo lo
     $this->get($this->base.'/catalogo')->assertSee('Producto común')->assertSee('Producto destacado');
 });
 
+it('la portada del tema clásico pasa las fotos de los destacados, cada una con su turno', function () {
+    Storage::disk('public')->put('products/a.jpg', 'a');
+    Storage::disk('public')->put('products/b.jpg', 'b');
+    $first = shopProduct(['name' => 'Abrigo destacado', 'is_featured' => true, 'images' => ['products/a.jpg']]);
+    shopProduct(['name' => 'Bikini destacada', 'is_featured' => true, 'images' => ['products/b.jpg']]);
+    shopProduct(['name' => 'Camisa sin foto', 'is_featured' => true]);
+    shopProduct(['name' => 'Común con foto', 'images' => ['products/a.jpg']]);
+
+    $html = $this->get($this->base.'/')->assertOk()->getContent();
+
+    expect(substr_count($html, 'class="hero-slide '))->toBe(2)
+        ->and($html)->toContain('@keyframes hero-slide')
+        ->toContain('href="'.url('/producto/'.$first->slug).'" class="hero-slide ')
+        ->toContain('animation-duration: 8s; animation-delay: 0s;')
+        ->toContain('animation-duration: 8s; animation-delay: 4s;');
+});
+
+it('con un solo destacado con foto la portada lo muestra fijo, sin animación', function () {
+    Storage::disk('public')->put('products/a.jpg', 'a');
+    shopProduct(['name' => 'Abrigo destacado', 'is_featured' => true, 'images' => ['products/a.jpg']]);
+
+    $html = $this->get($this->base.'/')->assertOk()->getContent();
+
+    expect(substr_count($html, 'class="hero-slide '))->toBe(1)
+        ->and($html)->not->toContain('@keyframes hero-slide')
+        ->not->toContain('animation-delay');
+});
+
+it('sin destacados con foto, o con una imagen de portada cargada, no hay pase de productos', function () {
+    shopProduct(['name' => 'Camisa sin foto', 'is_featured' => true]);
+
+    $this->get($this->base.'/')->assertOk()->assertDontSee('hero-slide', false);
+
+    Storage::disk('public')->put('products/a.jpg', 'a');
+    Storage::disk('public')->put('branding/hero.jpg', 'h');
+    shopProduct(['name' => 'Abrigo destacado', 'is_featured' => true, 'images' => ['products/a.jpg']]);
+    $appearance = app(Appearance::class);
+    $appearance->setFile($appearance->assetSlot('hero'), 'branding/hero.jpg');
+
+    $this->get($this->base.'/')->assertOk()->assertDontSee('hero-slide', false)->assertSee('branding/hero.jpg', false);
+});
+
 it('la sección Catálogo se oculta sin contenido o si se desactiva, pero el menú sigue enlazando', function () {
     $this->get($this->base.'/')->assertDontSee('id="catalog"', false)->assertDontSee('href="'.url('/catalogo').'"', false);
 

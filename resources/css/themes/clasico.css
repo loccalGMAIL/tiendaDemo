@@ -35,3 +35,33 @@
         font-family: var(--font-heading);
     }
 }
+
+/*
+ * Pase de productos de la portada: las fotos se apilan y cada una aparece en su turno
+ * (los fotogramas `hero-slide` los escribe la vista según la cantidad de fotos).
+ */
+@layer components {
+    .hero-slides > .hero-slide:only-child {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .hero-slides > .hero-slide:not(:only-child) {
+        opacity: 0;
+        visibility: hidden;
+        animation-name: hero-slide;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hero-slides > .hero-slide:not(:only-child) {
+            animation: none;
+        }
+
+        .hero-slides > .hero-slide:first-child {
+            opacity: 1;
+            visibility: visible;
+        }
+    }
+}
