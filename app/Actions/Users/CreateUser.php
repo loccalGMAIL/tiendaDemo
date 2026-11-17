@@ -11,10 +11,11 @@ class CreateUser
 {
     /**
      * @param  array{name: string, email: string, password: string, role: string, active?: bool, is_default_seller?: bool}  $data
+     * @param  bool  $withSuperAdmin  Solo el panel de la plataforma puede crear SuperAdmins.
      */
-    public function handle(array $data): User
+    public function handle(array $data, bool $withSuperAdmin = false): User
     {
-        if (! array_key_exists($data['role'], Role::assignable())) {
+        if (! array_key_exists($data['role'], Role::assignable($withSuperAdmin))) {
             throw ValidationException::withMessages(['role' => 'El rol indicado no es válido.']);
         }
 

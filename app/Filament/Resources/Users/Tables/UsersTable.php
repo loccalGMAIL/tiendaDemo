@@ -15,7 +15,10 @@ use Filament\Tables\Table;
 
 class UsersTable
 {
-    public static function configure(Table $table): Table
+    /**
+     * @param  bool  $forPlatform  Tabla del panel de la plataforma: el filtro de rol incluye al SuperAdmin.
+     */
+    public static function configure(Table $table, bool $forPlatform = false): Table
     {
         return $table
             ->columns([
@@ -46,7 +49,7 @@ class UsersTable
             ->filters([
                 SelectFilter::make('role')
                     ->label('Rol')
-                    ->options(Role::assignable()),
+                    ->options(Role::assignable($forPlatform)),
                 TernaryFilter::make('active')
                     ->label('Activo'),
             ])

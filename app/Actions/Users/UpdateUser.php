@@ -11,10 +11,11 @@ class UpdateUser
 {
     /**
      * @param  array<string, mixed>  $data
+     * @param  bool  $withSuperAdmin  Solo el panel de la plataforma puede asignar el rol SuperAdmin.
      */
-    public function handle(User $user, array $data): User
+    public function handle(User $user, array $data, bool $withSuperAdmin = false): User
     {
-        if (isset($data['role']) && ! array_key_exists($data['role'], Role::assignable())) {
+        if (isset($data['role']) && ! array_key_exists($data['role'], Role::assignable($withSuperAdmin))) {
             throw ValidationException::withMessages(['role' => 'El rol indicado no es válido.']);
         }
 

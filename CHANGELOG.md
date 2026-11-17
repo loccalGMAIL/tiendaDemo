@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.3 — Usuarios y actividad en la plataforma
+
+Requiere migración: no.
+
+- **Plataforma (`plataforma.`)**: nuevas secciones **Usuarios** y **Actividad**, solo para el SuperAdmin. Usuarios lista a todos, SuperAdmin incluido, y permite crearlos con cualquier rol, editarlos (nombre, correo, contraseña, rol y estado) y borrarlos si no tienen operaciones. Actividad muestra el registro completo, también lo hecho por y sobre los SuperAdmin, con filtros por usuario, evento y período; es de solo lectura.
+- En la plataforma nadie puede cambiar el rol ni desactivar su propia cuenta, para no quedarse sin SuperAdmin.
+- El panel del cliente no cambia: sigue sin mostrar ni ofrecer el rol SuperAdmin ni su actividad. `UserPolicy` y `ActivityLogPolicy` admiten al SuperAdmin; `Role::assignable()` y las acciones `CreateUser` y `UpdateUser` reciben `withSuperAdmin` (solo lo usa la plataforma).
+- El formulario y las tablas de Usuarios y Actividad se reusan entre los dos paneles.
+- **Textos**: el acceso dice «Ingrese a su cuenta» y el inicio de los dos paneles se llama «Dashboard» (traducciones propias en `lang/vendor/filament-panels/es`).
+
 ## 0.8.2 — Recorte automático de logos
 
 Requiere migración: no.

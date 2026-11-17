@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\Role;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -10,7 +11,10 @@ use Filament\Schemas\Schema;
 
 class UserForm
 {
-    public static function configure(Schema $schema): Schema
+    /**
+     * @param  bool  $forPlatform  Formulario del panel de la plataforma: ofrece también el rol SuperAdmin.
+     */
+    public static function configure(Schema $schema, bool $forPlatform = false): Schema
     {
         return $schema
             ->components([
@@ -36,13 +40,17 @@ class UserForm
                         : null),
                 Select::make('role')
                     ->label('Rol')
-                    ->options(Role::assignable())
+                    ->options(Role::assignable($forPlatform))
                     ->default(Role::Seller->value)
                     ->required()
+                    // En la plataforma nadie se quita a sí mismo el acceso (podría quedar sin SuperAdmin):
+                    // el rol y el estado de la propia cuenta no se editan. Un campo deshabilitado no se envía.
+                    ->disabled(fn (?User $record): bool => $forPlatform && ($record?->is(auth()->user()) ?? false))
                     ->native(false),
                 Toggle::make('active')
                     ->label('Activo')
                     ->helperText('Un usuario inactivo no puede ingresar.')
+                    ->disabled(fn (?User $record): bool => $forPlatform && ($record?->is(auth()->user()) ?? false))
                     ->default(true),
                 Toggle::make('is_default_seller')
                     ->label('Vendedor por defecto')

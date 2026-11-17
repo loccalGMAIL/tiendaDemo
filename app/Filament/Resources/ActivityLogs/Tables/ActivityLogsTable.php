@@ -14,7 +14,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ActivityLogsTable
 {
-    public static function configure(Table $table): Table
+    /**
+     * @param  bool  $forPlatform  Tabla del panel de la plataforma: ve y filtra por todos los usuarios, SuperAdmin incluido.
+     */
+    public static function configure(Table $table, bool $forPlatform = false): Table
     {
         return $table
             ->columns([
@@ -41,8 +44,12 @@ class ActivityLogsTable
             ->filters([
                 SelectFilter::make('user_id')
                     ->label('Usuario')
-                    // Solo usuarios visibles para el cliente: nunca el SuperAdmin.
-                    ->options(fn (): array => User::query()->visibleToClient()->orderBy('name')->pluck('name', 'id')->all()),
+                    // Para el cliente, solo usuarios visibles: nunca el SuperAdmin.
+                    ->options(fn (): array => User::query()
+                        ->when(! $forPlatform, fn (Builder $query) => $query->visibleToClient())
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all()),
                 SelectFilter::make('event')
                     ->label('Evento')
                     ->options(ActivityEvent::class),
