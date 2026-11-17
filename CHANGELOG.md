@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.2 — Recorte automático de logos
+
+Requiere migración: no.
+
+- **Los logos se recortan solos** al guardar Apariencia: se quita el fondo liso o transparente que rodea al dibujo y se deja un poco de aire. Un logo apaisado dentro de un cuadrado blanco ya no se ve diminuto en la barra. Aplica a los logos para fondo claro, para fondo oscuro y del acceso; no al favicon ni a la imagen para compartir.
+- Es idempotente y reemplaza el archivo en el mismo lugar: para arreglar un logo ya subido alcanza con abrir Apariencia y guardar. Sin la extensión GD, o con un archivo que no es una imagen, no hace nada.
+- Nuevo servicio `ImageTrimmer`.
+
 ## 0.8.1 — Portada y marca
 
 Requiere migración: no.
