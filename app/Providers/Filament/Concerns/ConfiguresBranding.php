@@ -22,6 +22,8 @@ trait ConfiguresBranding
             ->brandName(fn (): string => app(SiteContent::class)->name())
             ->brandLogo(fn (): ?string => app(Appearance::class)->logoUrl($this->onLoginScreen() ? 'login' : 'light'))
             ->darkModeBrandLogo(fn (): ?string => app(Appearance::class)->logoUrl('dark'))
+            // Filament muestra el logo a 1.5rem: ilegible. En el acceso hay lugar para uno bien grande.
+            ->brandLogoHeight(fn (): string => $this->onLoginScreen() ? '7rem' : '2.5rem')
             ->favicon(fn (): ?string => app(Appearance::class)->faviconUrl())
             ->colors(fn (): array => app(Appearance::class)->filamentColors())
             // La tipografía de los títulos viene del tema; la estructura del panel es siempre la misma.
