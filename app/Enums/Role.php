@@ -30,15 +30,20 @@ enum Role: string implements HasColor, HasLabel
     }
 
     /**
-     * Roles que el cliente puede asignar a sus usuarios (SuperAdmin no existe para él).
+     * Roles que se pueden asignar a un usuario. El cliente no conoce al SuperAdmin:
+     * solo el panel de la plataforma lo ofrece.
      *
      * @return array<string, string>
      */
-    public static function assignable(): array
+    public static function assignable(bool $withSuperAdmin = false): array
     {
-        return [
+        $roles = [
             self::Admin->value => self::Admin->getLabel(),
             self::Seller->value => self::Seller->getLabel(),
         ];
+
+        return $withSuperAdmin
+            ? [self::SuperAdmin->value => self::SuperAdmin->getLabel(), ...$roles]
+            : $roles;
     }
 }
