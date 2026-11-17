@@ -4,6 +4,7 @@ namespace App\Filament\Superadmin\Pages;
 
 use App\Models\User;
 use App\Services\Appearance;
+use App\Services\ImageTrimmer;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -142,7 +143,14 @@ class ManageAppearance extends Page
         $appearance->setPalette($state['palette']);
 
         foreach (Appearance::FILE_SLOTS as $slot) {
-            $appearance->setFile($slot, $this->path($state[$slot] ?? null));
+            $path = $this->path($state[$slot] ?? null);
+
+            // Un logo con mucho margen se ve chico en la barra: se recorta el fondo sobrante.
+            if ($path !== null && in_array($slot, Appearance::LOGO_SLOTS, true)) {
+                app(ImageTrimmer::class)->trim($path);
+            }
+
+            $appearance->setFile($slot, $path);
         }
 
         // Solo los recursos del tema elegido: son los campos que se muestran.

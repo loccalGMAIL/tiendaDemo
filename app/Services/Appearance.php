@@ -17,6 +17,9 @@ class Appearance
     /** Archivos de marca que carga el SuperAdmin. */
     public const FILE_SLOTS = ['logo_light', 'logo_dark', 'logo_login', 'favicon', 'share_image'];
 
+    /** Los que son logos: se les recorta el margen sobrante al guardar. */
+    public const LOGO_SLOTS = ['logo_light', 'logo_dark', 'logo_login'];
+
     public function __construct(private Settings $settings) {}
 
     /**
