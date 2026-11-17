@@ -17,6 +17,9 @@ class Appearance
     /** Archivos de marca que carga el SuperAdmin. */
     public const FILE_SLOTS = ['logo_light', 'logo_dark', 'logo_login', 'favicon', 'share_image'];
 
+    /** Modo de color de la landing: siempre claro, siempre oscuro o según el dispositivo del visitante. */
+    public const MODES = ['auto' => 'Automático', 'light' => 'Claro', 'dark' => 'Oscuro'];
+
     /** Los que son logos: se les recorta el margen sobrante al guardar. */
     public const LOGO_SLOTS = ['logo_light', 'logo_dark', 'logo_login'];
 
@@ -45,6 +48,26 @@ class Appearance
     public function theme(): array
     {
         return $this->themes()[$this->themeKey()];
+    }
+
+    /**
+     * Modo de color de la landing. Sin elegir, el automático (el de siempre): sigue
+     * la preferencia del dispositivo de cada visitante.
+     */
+    public function modeKey(): string
+    {
+        $stored = $this->settings->get('appearance.mode');
+
+        return is_string($stored) && array_key_exists($stored, self::MODES) ? $stored : 'auto';
+    }
+
+    public function setMode(string $mode): void
+    {
+        if (! array_key_exists($mode, self::MODES)) {
+            throw new InvalidArgumentException("El modo «{$mode}» no existe.");
+        }
+
+        $this->settings->set('appearance.mode', $mode);
     }
 
     /**
@@ -173,22 +196,38 @@ class Appearance
 
     /**
      * Variables CSS de la combinación y la tipografía del tema (la landing las usa
-     * con `bg-brand`, `text-ink`, etc.; se aplican sin recompilar).
+     * con `bg-brand`, `text-ink`, etc.; se aplican sin recompilar). Según el modo, el
+     * fondo y el texto son los claros, los oscuros o los que pida el dispositivo.
      */
     public function cssVariables(): string
     {
         $palette = $this->palette();
         $font = $this->theme()['font'];
+        $mode = $this->modeKey();
 
-        return ':root{'
+        $surface = $mode === 'dark' ? $palette['surface_dark'] : $palette['surface'];
+        $text = $mode === 'dark' ? $palette['text_dark'] : $palette['text'];
+        $scheme = match ($mode) {
+            'dark' => 'dark',
+            'light' => 'light',
+            default => 'light dark',
+        };
+
+        $css = ':root{'
             ."--brand:{$palette['primary']};--on-brand:{$palette['on_primary']};--accent:{$palette['accent']};"
-            ."--surface:{$palette['surface']};--text:{$palette['text']};"
+            ."--surface:{$surface};--text:{$text};"
             ."--surface-dark:{$palette['surface_dark']};--text-dark:{$palette['text_dark']};"
             ."--font-body:{$font['body']};--font-heading:{$font['heading']};"
-            .'}'
-            .'@media (prefers-color-scheme: dark){:root{'
-            ."--surface:{$palette['surface_dark']};--text:{$palette['text_dark']};"
-            .'}}';
+            ."color-scheme:{$scheme};"
+            .'}';
+
+        if ($mode === 'auto') {
+            $css .= '@media (prefers-color-scheme: dark){:root{'
+                ."--surface:{$palette['surface_dark']};--text:{$palette['text_dark']};"
+                .'}}';
+        }
+
+        return $css;
     }
 
     /**

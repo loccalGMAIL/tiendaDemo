@@ -93,6 +93,19 @@ class ManageAppearance extends Page
                         ->live(),
                     Text::make(fn (Get $get): HtmlString => $this->swatches((string) $get('theme'), (string) $get('palette'))),
                 ]),
+            Section::make('Modo de color de la landing')
+                ->description('Cómo se ve el sitio público. No cambia el panel.')
+                ->schema([
+                    Radio::make('mode')
+                        ->hiddenLabel()
+                        ->options(Appearance::MODES)
+                        ->descriptions([
+                            'auto' => 'Sigue el modo claro u oscuro del dispositivo de cada visitante.',
+                            'light' => 'Siempre claro, sin importar el dispositivo.',
+                            'dark' => 'Siempre oscuro. Usa el logo para fondo oscuro (si no hay, el claro).',
+                        ])
+                        ->required(),
+                ]),
             Section::make('Marca')
                 ->description('Logos, favicon e imagen para compartir en redes. Sin logo se muestra el nombre del negocio como texto.')
                 ->columns(2)
@@ -141,6 +154,7 @@ class ManageAppearance extends Page
         }
 
         $appearance->setPalette($state['palette']);
+        $appearance->setMode($state['mode']);
 
         foreach (Appearance::FILE_SLOTS as $slot) {
             $path = $this->path($state[$slot] ?? null);
@@ -174,6 +188,7 @@ class ManageAppearance extends Page
         $state = [
             'theme' => $appearance->themeKey(),
             'palette' => $appearance->paletteKey(),
+            'mode' => $appearance->modeKey(),
             'assets' => [],
         ];
 

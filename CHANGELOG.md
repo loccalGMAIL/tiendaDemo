@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.4 — Modo de color de la landing
+
+Requiere migración: no.
+
+- **Modo de color** en Plataforma → Apariencia: la landing y el catálogo pueden verse siempre en claro, siempre en oscuro o en automático (según el dispositivo de cada visitante). Sin elegir, queda en automático, como hasta ahora. No cambia el panel.
+- En modo claro la landing no lleva la regla de modo oscuro; en modo oscuro usa siempre el fondo y el texto oscuros de la combinación. Se declara también `color-scheme` para que los controles del navegador acompañen.
+- **Logos según el modo** (tema Clásico): en claro usa solo el logo claro, aunque haya uno oscuro; en oscuro usa el logo para fondo oscuro (o el claro si no hay); en automático lleva los dos y el dispositivo elige.
+- `Appearance` suma `modeKey()`, `setMode()` y `MODES`.
+
 ## 0.8.3 — Usuarios y actividad en la plataforma
 
 Requiere migración: no.

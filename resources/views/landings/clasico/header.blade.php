@@ -1,10 +1,17 @@
 <header class="sticky top-0 z-10 border-b border-ink/10 bg-surface/90 backdrop-blur">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <a href="{{ url('/') }}" class="flex items-center gap-2 text-lg font-semibold">
-            @if ($logo = $appearance->logoUrl('light'))
-                <img src="{{ $logo }}" alt="{{ $siteContent->name() }}" class="h-9 w-auto sm:h-12 @if ($appearance->logoUrl('dark')) dark:hidden @endif">
-                @if ($logoDark = $appearance->logoUrl('dark'))
-                    <img src="{{ $logoDark }}" alt="{{ $siteContent->name() }}" class="hidden h-9 w-auto sm:h-12 dark:block">
+            @php
+                $lightLogo = $appearance->logoUrl('light');
+                $darkLogo = $appearance->logoUrl('dark');
+                // Con el modo fijo hay un solo logo; en automático van los dos y el dispositivo elige.
+                $swapLogos = $appearance->modeKey() === 'auto' && $lightLogo && $darkLogo;
+                $logo = $appearance->modeKey() === 'dark' ? ($darkLogo ?? $lightLogo) : $lightLogo;
+            @endphp
+            @if ($logo)
+                <img src="{{ $logo }}" alt="{{ $siteContent->name() }}" class="h-9 w-auto sm:h-12 @if ($swapLogos) dark:hidden @endif">
+                @if ($swapLogos)
+                    <img src="{{ $darkLogo }}" alt="{{ $siteContent->name() }}" class="hidden h-9 w-auto sm:h-12 dark:block">
                 @endif
             @else
                 <span>{{ $siteContent->name() }}</span>
