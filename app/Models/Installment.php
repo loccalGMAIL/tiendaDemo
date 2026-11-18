@@ -48,6 +48,24 @@ class Installment extends Model
     }
 
     /**
+     * Ganancia que todavía queda por cobrar de este vencimiento: su saldo menos la parte del costo
+     * que le corresponde (la porción de costo proporcional a lo que falta cobrar). Incluye el
+     * interés de la financiación.
+     */
+    public function futureProfit(): string
+    {
+        $balance = $this->balance();
+
+        if (Money::compare((string) $this->amount, '0') <= 0 || Money::compare($balance, '0') <= 0) {
+            return '0.00';
+        }
+
+        $cost = Money::round(bcdiv(bcmul((string) $this->cost_portion, $balance, 8), (string) $this->amount, 8));
+
+        return Money::sub($balance, $cost);
+    }
+
+    /**
      * Vencido: con deuda y la fecha ya pasó (el día del vencimiento todavía no lo está).
      */
     public function isOverdue(): bool

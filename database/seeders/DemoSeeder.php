@@ -15,6 +15,7 @@ use App\Enums\Role;
 use App\Facades\Modules;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\FinancingPlan;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -77,6 +78,7 @@ class DemoSeeder extends Seeder
         $this->seedVariants();
         $this->seedStock();
         $this->seedCustomers();
+        $this->seedFinancingPlans();
         $this->seedSales();
         $this->seedCollections();
         $this->seedCatalog();
@@ -351,6 +353,12 @@ class DemoSeeder extends Seeder
                     ? [['payment_method_id' => $methods[$plan['pay'][0]], 'base_amount' => Money::percentOf($subtotal, (string) $plan['on_account']['paid'])]]
                     : [];
                 $data['due_date'] = Carbon::parse($date)->addDays($plan['on_account']['due_days'])->toDateString();
+
+                // Con Cuotas propias, el saldo se reparte en las cuotas del plan (la primera, el mes siguiente).
+                if (isset($plan['on_account']['plan']) && Modules::enabled(Module::Installments)) {
+                    $data['financing_plan_id'] = FinancingPlan::query()->where('name', $plan['on_account']['plan'])->value('id');
+                    $data['first_month'] = Carbon::parse($date)->addMonthNoOverflow()->format('Y-m');
+                }
             }
 
             $sale = app(CreateSale::class)->handle($actor, $data);
@@ -358,6 +366,23 @@ class DemoSeeder extends Seeder
             if (isset($plan['cancel'])) {
                 app(CancelSale::class)->handle($sale, $this->users['admin'], $plan['cancel']);
             }
+        }
+    }
+
+    /**
+     * Con Cuotas propias: dos planes de ejemplo, uno sin recargo y otro con recargo.
+     */
+    private function seedFinancingPlans(): void
+    {
+        if (! Modules::enabled(Module::Installments)) {
+            return;
+        }
+
+        foreach ([['3 cuotas', 3, '0.00', 1], ['6 cuotas', 6, '12.00', 2]] as [$name, $count, $surcharge, $position]) {
+            FinancingPlan::query()->firstOrCreate(
+                ['name' => $name],
+                ['installments_count' => $count, 'surcharge_percent' => $surcharge, 'active' => true, 'position' => $position],
+            );
         }
     }
 
@@ -537,12 +562,14 @@ class DemoSeeder extends Seeder
      * El día es 0-based dentro del mes; dos ventas se anulan.
      *
      * `on_account` (solo con Cuenta corriente y cliente): qué porcentaje se cobra en el acto y a
-     * cuántos días vence el saldo; sin el módulo la venta es de contado como el resto.
+     * cuántos días vence el saldo; sin el módulo la venta es de contado como el resto. Con `plan`
+     * (nombre de un plan de financiación) y el módulo Cuotas propias, el saldo se reparte en las
+     * cuotas de ese plan; sin él, queda como un único vencimiento.
      *
      * @return list<array{
      *     month: int, day: int, by: string, customer?: int, pay: list<string>,
      *     items: list<array{0: string, 1: int, 2: int}>, cancel?: string,
-     *     on_account?: array{paid: int, due_days: int}
+     *     on_account?: array{paid: int, due_days: int, plan?: string}
      * }>
      */
     protected function salePlan(): array
@@ -561,11 +588,11 @@ class DemoSeeder extends Seeder
             ['month' => 0, 'day' => 9, 'by' => 'admin', 'customer' => 3, 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['jean-recto', 2, 2]], 'on_account' => ['paid' => 30, 'due_days' => 30]],
             ['month' => 0, 'day' => 10, 'by' => 'luis', 'pay' => ['Efectivo'], 'items' => [['remera-basica', 1, 3]]],
             ['month' => 1, 'day' => 2, 'by' => 'ana', 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['campera-puffer', 1, 1]]],
-            ['month' => 1, 'day' => 4, 'by' => 'admin', 'customer' => 0, 'pay' => ['Transferencia'], 'items' => [['remera-basica', 2, 2], ['cinturon', 0, 1]], 'on_account' => ['paid' => 50, 'due_days' => 20]],
+            ['month' => 1, 'day' => 4, 'by' => 'admin', 'customer' => 0, 'pay' => ['Transferencia'], 'items' => [['remera-basica', 2, 2], ['cinturon', 0, 1]], 'on_account' => ['paid' => 50, 'due_days' => 20, 'plan' => '3 cuotas']],
             ['month' => 1, 'day' => 5, 'by' => 'luis', 'pay' => ['Débito'], 'items' => [['buzo-canguro', 0, 2]]],
             ['month' => 1, 'day' => 8, 'by' => 'ana', 'pay' => ['Efectivo'], 'items' => [['camisa-lino', 0, 1]]],
             ['month' => 1, 'day' => 10, 'by' => 'admin', 'pay' => ['Efectivo'], 'items' => [['gorra', 0, 3]]],
-            ['month' => 1, 'day' => 12, 'by' => 'luis', 'customer' => 4, 'pay' => ['Tarjeta 6 cuotas'], 'items' => [['jean-recto', 0, 1], ['remera-estampada', 0, 1]], 'on_account' => ['paid' => 0, 'due_days' => 45]],
+            ['month' => 1, 'day' => 12, 'by' => 'luis', 'customer' => 4, 'pay' => ['Tarjeta 6 cuotas'], 'items' => [['jean-recto', 0, 1], ['remera-estampada', 0, 1]], 'on_account' => ['paid' => 0, 'due_days' => 45, 'plan' => '6 cuotas']],
             ['month' => 1, 'day' => 15, 'by' => 'ana', 'pay' => ['Tarjeta 1 cuota'], 'items' => [['pantalon-sastrero', 2, 1]], 'cancel' => 'Error de carga: se cobró de más'],
             ['month' => 1, 'day' => 18, 'by' => 'admin', 'pay' => ['Transferencia'], 'items' => [['mochila', 0, 1]]],
             ['month' => 1, 'day' => 20, 'by' => 'luis', 'pay' => ['Efectivo', 'Transferencia'], 'items' => [['remera-basica', 4, 2]]],

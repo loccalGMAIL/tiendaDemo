@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.13.0 — Cuotas propias (Fase 9)
+
+Requiere migración: sí (tabla `financing_plans` y `sales.financing_surcharge` / `financing_surcharge_percent`; `financing_plan_id`, `installments_count` y `first_due_date` ya existían). Las tablas y columnas existen siempre; con el módulo apagado una venta a cuenta sigue teniendo un único vencimiento.
+
+- **Planes de financiación** (Configuración → Planes de financiación, el administrador del cliente): nombre, cantidad de cuotas (2 a 60) y recargo (0 a 100 %). Un plan usado en ventas no se borra, se desactiva.
+- **Ventas en cuotas**: con saldo a cuenta, el formulario de venta ofrece «Plan de pago» (o un solo vencimiento) y muestra en vivo lo que se financia, el recargo, la cuota y el **cronograma**, con el mismo servicio que arma las cuotas de la venta real.
+  - **A financiar** = lo que queda a cuenta × (1 + recargo del plan). La cuota es lo financiado dividido la cantidad, **redondeada hacia abajo** a centavos, y **la última absorbe la diferencia** (1.000 en 3 → 333,33 · 333,33 · 333,34).
+  - **Vencimientos mensuales** según la regla de Plataforma: **día fijo** (se elige el mes de la primera cuota, por defecto el siguiente) o **el mismo día de la venta** (31/1 → 28/2 → 31/3; en los meses cortos vence el último día).
+  - La venta **copia el plan** (cuotas y recargo): cambiarlo o desactivarlo después no la afecta.
+  - Cada cuota lleva la **porción de costo** que le corresponde (la última absorbe el redondeo).
+- **El recargo va aparte del total de la venta**: es un débito propio en la cuenta del cliente («Recargo de financiación»), así que el saldo del libro sigue siendo la suma de los vencimientos. Al anular la venta se acredita también el recargo y la cuenta queda en cero. Los cobros siguen imputándose del más viejo al más nuevo.
+- **Vista de la venta**: el plan elegido, el recargo y el cronograma de cuotas con lo pagado y su estado.
+- **Escritorio** (administrador): **ganancia futura** (lo que falta cobrar menos su costo, con el interés), lo que vence el mes próximo y el gráfico de **ingresos proyectados a 12 meses** (por cobrar y ganancia; lo vencido cuenta en el mes actual).
+- **Demostración**: dos planes («3 cuotas» y «6 cuotas» +12 %) y dos de las ventas a cuenta se financian en cuotas; sin el módulo, la demo queda como en la 0.12.0.
+- Nuevos: `FinancingPlan`, `InstallmentSchedule` (servicio puro), `InstallmentsOverview`, `ProjectedIncomeChart`, `AdministratorChartWidget`. Invariante nueva: `total − cobrado en el acto + recargo = financiado`.
+- Pendiente fuera del plan: refinanciar o reprogramar cuotas, recargos por mora, planes por producto o cliente.
+
 ## 0.12.0 — Cuenta corriente (Fase 8)
 
 Requiere migración: sí (`installments`, `installment_payment` y `account_movements`; las columnas de `sales` y `payments` ya existían). Las tablas existen siempre; con el módulo apagado todo sigue como antes (venta de contado) y no se pierde ningún dato.

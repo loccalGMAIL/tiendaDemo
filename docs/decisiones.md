@@ -58,6 +58,17 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Cuotas propias)
+
+- **El recargo de financiación va aparte del total de la venta.** `sales.total` sigue siendo subtotal + ajustes de los medios de pago; el recargo se guarda en `financing_surcharge` (con su porcentaje) y se asienta como un débito propio en la cuenta del cliente. Ventas y ganancia no cambia: el interés se ve en la cuenta, en los vencimientos y en la ganancia futura. Invariante: `total − down_payment + financing_surcharge = financed_amount`.
+- **Los planes los administra el administrador del cliente** (Configuración, como los medios de pago); la regla de vencimiento (día fijo o mismo día) sigue siendo un ajuste del SuperAdmin.
+- **Un servicio puro** (`InstallmentSchedule`) arma el cronograma y lo usan la venta real, el listener de Cuenta corriente y la vista previa del formulario: los números coinciden por construcción. La cuota se redondea hacia abajo (`bcdiv` a 2 decimales) y la última absorbe la diferencia; lo mismo con la porción de costo.
+- **La primera cuota vence justo en la fecha calculada** y las demás en el día de anclaje de su mes (el fijo, o el día de la venta), siempre desde el mes de la primera, así 31/1 → 28/2 → 31/3. Con día fijo el ajuste admite hasta el 28, por eso nunca se acorta.
+- **La porción de costo de lo financiado** es `total_cost × base ÷ subtotal` (la base es lo que queda a cuenta sin recargo), repartida en proporción a las cuotas. El plan base dice «costo × cuota ÷ total»; con recargo esa fórmula superaría el costo, así que se reparte sobre la base. La **ganancia futura** de una cuota es su saldo menos la parte de costo proporcional a lo que falta cobrar: incluye el interés.
+- **La venta copia el plan** (`financing_plan_id`, `installments_count`, recargo y su porcentaje); no hay clave foránea (la columna ya existía) y el plan puede cambiar o desactivarse sin tocar lo vendido.
+- **Sin el módulo o sin elegir plan, el saldo es un único vencimiento** con la fecha indicada. Con el módulo apagado, un plan que llegue se ignora; el vencimiento sigue siendo obligatorio.
+- **Gráfico**: ingresos proyectados a 12 meses por mes de vencimiento (por cobrar y ganancia). Lo ya vencido se suma al mes actual para que no desaparezca de la proyección. Solo para el administrador, porque muestra ganancias.
+
 ## Decisiones de diseño (Cuenta corriente)
 
 - **Saldo = un único vencimiento.** Sin el módulo Cuotas propias (que todavía no existe), lo que queda a cuenta es un vencimiento con la fecha que se elige al vender. `installments` ya trae `number` y `cost_portion` para que Cuotas lo reparta en varios.
