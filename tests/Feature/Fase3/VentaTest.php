@@ -144,6 +144,8 @@ it('admite pago combinado: cada medio con su ajuste y la suma de bases igual al 
 });
 
 it('rechaza el pago combinado cuando la suma de bases no da el subtotal', function () {
+    // Regla de contado del núcleo: con Cuenta corriente cobrar de menos deja saldo a cuenta.
+    resetModules();
     expect(fn () => app(CreateSale::class)->handle($this->admin, [
         'items' => [item($this->variant, 3)],
         'payments' => [pay($this->cash, '1000.00'), pay($this->card, '1000.00')],
@@ -165,6 +167,8 @@ it('con varios cobros exige indicar el monto de cada uno', function () {
 });
 
 it('exige al menos un ítem y al menos un cobro', function () {
+    // Con Cuenta corriente se puede vender sin cobrar nada (queda a cuenta): esta es la regla de contado.
+    resetModules();
     expect(fn () => app(CreateSale::class)->handle($this->seller, ['items' => [], 'payments' => [pay($this->cash)]]))
         ->toThrow(ValidationException::class, 'al menos un ítem');
 

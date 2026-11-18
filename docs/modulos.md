@@ -45,6 +45,8 @@ Como el trait del módulo ocupa `canAccess()` / `canView()`, lo que además es s
 
 El núcleo no llama a los módulos: dispara eventos. `SaleCreated` y `SaleCancelled` (con la venta y el usuario que actúa) se disparan **dentro de la transacción** de `CreateSale` / `CancelSale`. Un listener sincrónico en `app/Listeners` (auto-descubierto) hace el efecto del módulo; si lanza una excepción (por ejemplo `ValidationException` cuando Stock está en modo bloquear), la venta completa se revierte. Cada listener empieza con `if (! Modules::enabled(...)) return;`, salvo los que deben revertir lo ya registrado (la devolución de stock mira los movimientos de esa venta, no el estado del módulo).
 
+Cuenta corriente sigue el mismo camino: `RegisterAccountForSale` arma el vencimiento y asienta el libro del cliente cuando la venta deja saldo, y `ReverseAccountForCancelledSale` lo revierte al anular (y rechaza la anulación si ya hay cobros imputados). Lo único que el núcleo pregunta directamente es `Modules::enabled(CurrentAccount)` en `CreateSale`, para admitir cobros parciales o ninguno y exigir cliente y vencimiento cuando queda saldo.
+
 ## Cómo agregar un módulo
 
 1. Agregar el caso a `App\Enums\Module` (después de los que requiere) con etiqueta, descripción, `requires()`, `missingConfiguration()` y `defaultSettings()` si corresponde.

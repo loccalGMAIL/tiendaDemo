@@ -58,6 +58,21 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Cuenta corriente)
+
+- **Saldo = un único vencimiento.** Sin el módulo Cuotas propias (que todavía no existe), lo que queda a cuenta es un vencimiento con la fecha que se elige al vender. `installments` ya trae `number` y `cost_portion` para que Cuotas lo reparta en varios.
+- **Los números de la venta**: `total − down_payment = financed_amount`. Lo cobrado en el acto es la base más el ajuste de cada medio; lo que queda a cuenta es `subtotal − Σ bases` (el ajuste de un medio solo grava lo que ese medio cobra).
+- **Una venta de contado no toca el libro**, aunque tenga cliente y el módulo esté encendido: solo las ventas con saldo generan movimientos (débito por el total, crédito por cada cobro en el acto).
+- **El cobro baja la deuda por su base**, no por lo que paga el cliente: el recargo o descuento del medio es resultado del cobro, no de la deuda. El crédito del libro es la base.
+- **Imputación**: del más viejo al más nuevo por fecha de vencimiento y luego id, o solo a los vencimientos elegidos. Un cobro no puede superar la deuda total (ni el saldo de lo elegido). El libro nunca se edita: las anulaciones son ajustes. Invariante probada: saldo del libro = Σ saldos de vencimientos abiertos.
+- **Anular una venta con cobros imputados se rechaza**: el evento `SaleCancelled` corre dentro de la transacción, así que el listener del módulo lanza `ValidationException` y no queda nada a medias. Anula primero los cobros, así cada devolución queda registrada.
+- **El anticipo no se anula solo**: es parte de la venta. `PaymentPolicy::cancel` solo admite cobros a cuenta (`sale_id` vacío).
+- **El vendedor cobra pero no anula.** Ve y registra cobros, y ve la ficha de los clientes (los clientes ya eran compartidos); el administrador anula. Para que un vendedor vea los cobros que cargó, `Payment::scopeVisibleTo` incluye los suyos además de los de sus ventas.
+- **Un cliente inactivo con deuda puede pagar.** «Inactivo» solo impide venderle.
+- **Nombres**: la relación de un cobro con sus vencimientos es `imputedInstallments()`, porque `payments.installments` es la cantidad de cuotas del medio de pago (una columna que tapa a la relación del mismo nombre).
+- **Informes de cuenta corriente** (Saldos pendientes y Cobranza del mes): piden Informes y Cuenta corriente (`alsoRequires()`). «Vencido» es lo que ya pasó de su fecha; lo que vence hoy cuenta en el mes actual. No se filtran por Desde/Hasta: usan una foto de hoy y un mes propio.
+- **Demostración**: las ventas a cuenta se marcan en el plan con `on_account` (porcentaje cobrado y días al vencimiento) y solo valen con el módulo encendido; la demo sigue teniendo 25 ventas.
+
 ## Decisiones de diseño (Compras)
 
 - **Todo es del administrador.** Proveedores, órdenes y facturas tienen policies solo para administrador: el vendedor no ve costos de compra.

@@ -3,8 +3,10 @@
 namespace App\Actions\Sales;
 
 use App\Enums\ActivityEvent;
+use App\Enums\Module;
 use App\Enums\SaleStatus;
 use App\Events\SaleCreated;
+use App\Facades\Modules;
 use App\Models\Customer;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -19,8 +21,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Confirma una venta de contado: ítems con precio y costo copiados, cobros
- * con el recargo o descuento de su medio de pago, y la venta nace pagada.
+ * Confirma una venta: ítems con precio y costo copiados, cobros con el recargo o
+ * descuento de su medio de pago, y la venta nace pagada. Con el módulo Cuenta
+ * corriente, lo que no se cobra en el acto queda a cuenta del cliente (la venta nace
+ * con saldo y el módulo arma su vencimiento al escuchar el evento).
  */
 class CreateSale
 {
@@ -34,6 +38,7 @@ class CreateSale
      *     seller_id?: int|string|null,
      *     customer_id?: int|string|null,
      *     date?: string|null,
+     *     due_date?: string|null,
      *     notes?: string|null,
      *     items?: array<int, array{variant_id?: int|string|null, quantity?: int|string|null, unit_price?: string|int|float|null}>,
      *     payments?: array<int, array{payment_method_id?: int|string|null, base_amount?: string|int|float|null}>
@@ -64,17 +69,13 @@ class CreateSale
             ], $payments),
         );
 
-        if (! $calculation['balanced']) {
-            $paid = Money::sum(array_column($calculation['payments'], 'base_amount'));
-
-            throw ValidationException::withMessages([
-                'payments' => "La suma de los cobros ({$paid}) no coincide con el subtotal ({$calculation['subtotal']}).",
-            ]);
-        }
-
         $date = isset($data['date']) && filled($data['date'])
             ? Carbon::parse($data['date'])->toDateString()
             : now()->toDateString();
+
+        // Con Cuenta corriente lo que no se cobra en el acto queda a cuenta del cliente;
+        // sin el módulo toda venta es de contado y los cobros suman exactamente el subtotal.
+        $financed = $this->resolveFinancedAmount($calculation, $customer, $data, $date);
 
         $sale = new Sale([
             'customer_id' => $customer?->getKey(),
@@ -87,10 +88,11 @@ class CreateSale
                 fn (array $item): string => Money::mul($item['unit_cost'], $item['quantity']),
                 $items,
             )),
-            // Sin Cuenta corriente toda venta es de contado: se cobra todo en el acto.
-            'down_payment' => $calculation['total'],
-            'financed_amount' => '0.00',
-            'status' => SaleStatus::Paid,
+            // Lo cobrado en el acto (base + ajuste de cada medio) y lo que queda a cuenta.
+            'down_payment' => Money::sub($calculation['total'], $financed),
+            'financed_amount' => $financed,
+            'first_due_date' => Money::compare($financed, '0') > 0 ? Carbon::parse($data['due_date'])->toDateString() : null,
+            'status' => Money::compare($financed, '0') > 0 ? SaleStatus::Active : SaleStatus::Paid,
             'notes' => $data['notes'] ?? null,
         ]);
         $sale->save();
@@ -139,6 +141,60 @@ class CreateSale
         SaleCreated::dispatch($sale, $actor);
 
         return $sale;
+    }
+
+    /**
+     * Lo que queda a cuenta del cliente (cero en una venta de contado). Con Cuenta corriente
+     * los cobros pueden cubrir menos que el subtotal; el saldo exige cliente y vencimiento.
+     *
+     * @param  array{subtotal: string, balance: string, balanced: bool, overpaid: bool, payments: list<array{base_amount: string}>}  $calculation
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    private function resolveFinancedAmount(array $calculation, ?Customer $customer, array $data, string $date): string
+    {
+        $paid = Money::sum(array_column($calculation['payments'], 'base_amount'));
+
+        if (! Modules::enabled(Module::CurrentAccount)) {
+            if (! $calculation['balanced']) {
+                throw ValidationException::withMessages([
+                    'payments' => "La suma de los cobros ({$paid}) no coincide con el subtotal ({$calculation['subtotal']}).",
+                ]);
+            }
+
+            return '0.00';
+        }
+
+        if ($calculation['overpaid']) {
+            throw ValidationException::withMessages([
+                'payments' => "La suma de los cobros ({$paid}) supera el subtotal ({$calculation['subtotal']}).",
+            ]);
+        }
+
+        if (Money::compare($calculation['balance'], '0') === 0) {
+            return '0.00';
+        }
+
+        if ($customer === null) {
+            throw ValidationException::withMessages(['customer_id' => 'Una venta con saldo a cuenta necesita un cliente.']);
+        }
+
+        if (blank($data['due_date'] ?? null)) {
+            throw ValidationException::withMessages(['due_date' => 'Indicá el vencimiento del saldo.']);
+        }
+
+        try {
+            $due = Carbon::parse($data['due_date'])->toDateString();
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['due_date' => 'El vencimiento no es una fecha válida.']);
+        }
+
+        if ($due < $date) {
+            throw ValidationException::withMessages(['due_date' => 'El vencimiento no puede ser anterior a la fecha de la venta.']);
+        }
+
+        return $calculation['balance'];
     }
 
     /**
@@ -287,7 +343,12 @@ class CreateSale
     {
         $rawPayments = array_values($data['payments'] ?? []);
 
+        // Con Cuenta corriente la venta puede quedar entera a cuenta (sin cobros).
         if ($rawPayments === []) {
+            if (Modules::enabled(Module::CurrentAccount)) {
+                return [];
+            }
+
             throw ValidationException::withMessages(['payments' => 'Indicá al menos un medio de pago.']);
         }
 

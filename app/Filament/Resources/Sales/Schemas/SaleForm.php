@@ -39,6 +39,9 @@ class SaleForm
                         ->getSearchResultsUsing(fn (string $search): array => self::searchCustomers($search))
                         ->options(fn (): array => self::searchCustomers(''))
                         ->getOptionLabelUsing(fn (mixed $value): ?string => Customer::query()->find($value)?->name)
+                        // Con saldo a cuenta (módulo Cuenta corriente) la venta necesita un cliente.
+                        ->required(fn (Get $get): bool => self::leavesBalance($get))
+                        ->helperText(fn (Get $get): ?string => self::leavesBalance($get) ? 'Obligatorio: la venta deja saldo a cuenta del cliente.' : null)
                         // Alta rápida de cliente sin salir de la venta.
                         ->createOptionForm(CustomerForm::fields())
                         ->createOptionUsing(fn (array $data): int => Customer::create($data)->getKey()),
@@ -127,11 +130,14 @@ class SaleForm
                         ]),
                 ]),
             Section::make('Cobro')
-                ->description('Con varios medios de pago, la suma de los montos tiene que dar el subtotal.')
+                ->description(fn (): string => self::onAccount()
+                    ? 'Lo que se cobra ahora. Lo que falte queda a cuenta del cliente; sin ningún cobro, la venta queda entera a cuenta.'
+                    : 'Con varios medios de pago, la suma de los montos tiene que dar el subtotal.')
                 ->schema([
                     Repeater::make('payments')
                         ->hiddenLabel()
-                        ->minItems(1)
+                        // Con Cuenta corriente se puede no cobrar nada en el acto.
+                        ->minItems(fn (): int => self::onAccount() ? 0 : 1)
                         ->defaultItems(1)
                         ->addActionLabel('Agregar otro medio de pago')
                         ->live()
@@ -158,8 +164,9 @@ class SaleForm
                                 ->step('0.01')
                                 ->prefix('$')
                                 ->live(onBlur: true)
-                                // Con un solo medio de pago cubre todo el subtotal.
-                                ->visible(fn (Get $get): bool => count($get('../../payments') ?? []) > 1)
+                                // Con un solo medio de pago cubre todo el subtotal (o lo que se indique, con Cuenta corriente).
+                                ->placeholder(fn (): ?string => self::onAccount() ? 'Todo el subtotal' : null)
+                                ->visible(fn (Get $get): bool => self::onAccount() || count($get('../../payments') ?? []) > 1)
                                 ->required(fn (Get $get): bool => count($get('../../payments') ?? []) > 1)
                                 ->columnSpan(6),
                         ]),
@@ -168,8 +175,20 @@ class SaleForm
                 ->schema([
                     Text::make(fn (Get $get): string => 'Subtotal: '.Money::format(self::calculation($get)['subtotal'])),
                     Text::make(fn (Get $get): string => 'Recargos y descuentos: '.Money::format(self::calculation($get)['adjustment'])),
-                    Text::make(fn (Get $get): string => 'Total a cobrar: '.Money::format(self::calculation($get)['total']))
+                    Text::make(fn (Get $get): string => (self::onAccount() ? 'Total de la venta: ' : 'Total a cobrar: ').Money::format(self::calculation($get)['total']))
                         ->size('lg'),
+                    Text::make(fn (Get $get): string => 'Se cobra ahora: '.Money::format(Money::sub(self::calculation($get)['total'], self::calculation($get)['balance'])))
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                    Text::make(fn (Get $get): string => 'A cuenta del cliente: '.Money::format(self::calculation($get)['balance']))
+                        ->size('lg')
+                        ->color('warning')
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                    DatePicker::make('due_date')
+                        ->label('Vencimiento del saldo')
+                        ->default(fn (): string => now()->addDays(30)->toDateString())
+                        ->minDate(fn (Get $get): mixed => $get('date'))
+                        ->required(fn (Get $get): bool => self::leavesBalance($get))
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
                     Text::make(fn (Get $get): string => self::balanceWarning($get) ?? '')
                         ->color('danger')
                         ->visible(fn (Get $get): bool => self::balanceWarning($get) !== null),
@@ -177,10 +196,29 @@ class SaleForm
         ]);
     }
 
+    private static function onAccount(): bool
+    {
+        return Modules::enabled(Module::CurrentAccount);
+    }
+
+    /**
+     * Con Cuenta corriente: los cobros dejan algo sin cubrir y hay con qué armar el saldo.
+     */
+    private static function leavesBalance(Get $get): bool
+    {
+        if (! self::onAccount()) {
+            return false;
+        }
+
+        $calculation = self::calculation($get);
+
+        return ! $calculation['overpaid'] && Money::compare($calculation['balance'], '0') > 0;
+    }
+
     /**
      * Cálculo en vivo con el mismo servicio que usa la venta real.
      *
-     * @return array{subtotal: string, adjustment: string, total: string, payments: list<array{base_amount: string, adjustment_amount: string, amount: string}>, balanced: bool}
+     * @return array{subtotal: string, adjustment: string, total: string, payments: list<array{base_amount: string, adjustment_amount: string, amount: string}>, balanced: bool, balance: string, overpaid: bool}
      */
     private static function calculation(Get $get): array
     {
@@ -225,6 +263,11 @@ class SaleForm
         $calculation = self::calculation($get);
 
         if ($calculation['payments'] === [] || $calculation['balanced'] || Money::compare($calculation['subtotal'], '0') === 0) {
+            return null;
+        }
+
+        // Con Cuenta corriente cobrar de menos es válido (queda a cuenta); solo se avisa si se pasa.
+        if (self::onAccount() && ! $calculation['overpaid']) {
             return null;
         }
 

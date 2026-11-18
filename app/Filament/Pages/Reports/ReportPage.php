@@ -79,11 +79,28 @@ abstract class ReportPage extends AdministratorPage
         ];
     }
 
+    /**
+     * Si el informe se filtra por un período (Desde y Hasta). Los que informan una foto de hoy
+     * (saldos) o un mes propio (cobranza) devuelven false y traen sus propios filtros.
+     */
+    public function usesPeriod(): bool
+    {
+        return true;
+    }
+
     public function periodLabel(): string
     {
         [$from, $to] = Report::period(['from' => $this->from, 'to' => $this->to]);
 
         return $from->format('d/m/Y').' al '.$to->format('d/m/Y');
+    }
+
+    /**
+     * Texto bajo el título de la tabla: qué abarca el informe.
+     */
+    public function sectionDescription(): string
+    {
+        return 'Del '.$this->periodLabel().' · Importes en pesos';
     }
 
     public function mount(): void

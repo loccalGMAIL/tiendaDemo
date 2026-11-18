@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Accounts\CancelPayment;
+use App\Actions\Accounts\CollectPayment;
 use App\Actions\Products\CreateProduct;
 use App\Actions\Sales\CancelSale;
 use App\Actions\Sales\CreateSale;
@@ -13,6 +15,7 @@ use App\Enums\Role;
 use App\Facades\Modules;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -22,6 +25,7 @@ use App\Services\Money;
 use App\Services\Settings;
 use App\Services\SiteContent;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
@@ -47,7 +51,7 @@ class DemoSeeder extends Seeder
     private array $users = [];
 
     /** @var array<string, Product> */
-    private array $products = [];
+    protected array $products = [];
 
     /** @var list<Customer> */
     private array $customers = [];
@@ -74,6 +78,7 @@ class DemoSeeder extends Seeder
         $this->seedStock();
         $this->seedCustomers();
         $this->seedSales();
+        $this->seedCollections();
         $this->seedCatalog();
 
         $this->command?->info('Demostración cargada: '.Product::query()->count().' productos y '.Sale::query()->count().' ventas.');
@@ -112,7 +117,7 @@ class DemoSeeder extends Seeder
         }
     }
 
-    private function seedSite(): void
+    protected function seedSite(): void
     {
         if (app(Settings::class)->get('site') !== null) {
             return;
@@ -120,8 +125,17 @@ class DemoSeeder extends Seeder
 
         $site = app(SiteContent::class);
 
-        $site->save([
-            ...$site->defaults(),
+        $site->save([...$site->defaults(), ...$this->siteDefinition()]);
+    }
+
+    /**
+     * Contenido del sitio público de la demostración.
+     *
+     * @return array<string, mixed>
+     */
+    protected function siteDefinition(): array
+    {
+        return [
             'name' => 'Casa Lila',
             'tagline' => 'Ropa con historia',
             'hero_title' => 'Vestite como te sentís',
@@ -142,28 +156,44 @@ class DemoSeeder extends Seeder
             'email' => 'hola@casalila.example',
             'address' => 'Av. Corrientes 1234, CABA',
             'instagram' => 'https://instagram.com/casalila.example',
-        ]);
+        ];
     }
 
     // --- Productos --------------------------------------------------------------
 
-    private function seedVariantAttributes(): void
+    protected function seedVariantAttributes(): void
     {
         if (! Modules::enabled(Module::Variants) || Modules::setting(Module::Variants, 'attributes', []) !== []) {
             return;
         }
 
-        Modules::updateSettings(Module::Variants, ['attributes' => [
-            ['name' => 'Talle', 'values' => ['S', 'M', 'L', 'XL']],
-            ['name' => 'Color', 'values' => ['Negro', 'Blanco', 'Azul', 'Gris']],
-        ]]);
+        Modules::updateSettings(Module::Variants, ['attributes' => $this->variantAttributes()]);
     }
 
-    private function seedProducts(): void
+    /**
+     * @return list<array{name: string, values: list<string>}>
+     */
+    protected function variantAttributes(): array
+    {
+        return [
+            ['name' => 'Talle', 'values' => ['S', 'M', 'L', 'XL']],
+            ['name' => 'Color', 'values' => ['Negro', 'Blanco', 'Azul', 'Gris']],
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function categoryNames(): array
+    {
+        return ['Remeras', 'Camisas', 'Pantalones', 'Abrigos', 'Accesorios'];
+    }
+
+    protected function seedProducts(): void
     {
         $categories = [];
 
-        foreach (['Remeras', 'Camisas', 'Pantalones', 'Abrigos', 'Accesorios'] as $position => $name) {
+        foreach ($this->categoryNames() as $position => $name) {
             $categories[$name] = Category::query()->create(['name' => $name, 'position' => $position, 'active' => true]);
         }
 
@@ -261,9 +291,12 @@ class DemoSeeder extends Seeder
 
     // --- Clientes y ventas --------------------------------------------------------
 
-    private function seedCustomers(): void
+    /**
+     * @return list<array{0: string, 1: string, 2: string, 3: string, 4: string}>
+     */
+    protected function customerDefinitions(): array
     {
-        $customers = [
+        return [
             ['Marcela Rojas', '27345678', '011 5555-0101', 'marcela@example.test', 'Palermo'],
             ['Jorge Díaz', '30123456', '011 5555-0102', 'jorge@example.test', 'Caballito'],
             ['Sofía Benítez', '33456789', '011 5555-0103', 'sofia@example.test', 'Belgrano'],
@@ -271,8 +304,11 @@ class DemoSeeder extends Seeder
             ['Valeria Costa', '28765432', '011 5555-0105', 'valeria@example.test', 'Villa Urquiza'],
             ['Nicolás Sosa', '36111222', '011 5555-0106', 'nicolas@example.test', 'Flores'],
         ];
+    }
 
-        foreach ($customers as [$name, $document, $phone, $email, $city]) {
+    protected function seedCustomers(): void
+    {
+        foreach ($this->customerDefinitions() as [$name, $document, $phone, $email, $city]) {
             $this->customers[] = Customer::query()->create([
                 'name' => $name,
                 'document_number' => $document,
@@ -300,18 +336,72 @@ class DemoSeeder extends Seeder
             }
 
             $actor = $this->users[$plan['by']];
+            $date = $this->dateFor($plan['month'], $plan['day']);
 
-            $sale = app(CreateSale::class)->handle($actor, [
+            $data = [
                 'customer_id' => isset($plan['customer']) ? $this->customers[$plan['customer']]->getKey() : null,
-                'date' => $this->dateFor($plan['month'], $plan['day']),
+                'date' => $date,
                 'items' => $items,
                 'payments' => $this->paymentsFor($plan['pay'], $methods->all(), $subtotal),
-            ]);
+            ];
+
+            // Con Cuenta corriente, algunas ventas dejan saldo a cuenta (algunas ya vencidas).
+            if (isset($plan['on_account'], $plan['customer']) && Modules::enabled(Module::CurrentAccount)) {
+                $data['payments'] = $plan['on_account']['paid'] > 0
+                    ? [['payment_method_id' => $methods[$plan['pay'][0]], 'base_amount' => Money::percentOf($subtotal, (string) $plan['on_account']['paid'])]]
+                    : [];
+                $data['due_date'] = Carbon::parse($date)->addDays($plan['on_account']['due_days'])->toDateString();
+            }
+
+            $sale = app(CreateSale::class)->handle($actor, $data);
 
             if (isset($plan['cancel'])) {
                 app(CancelSale::class)->handle($sale, $this->users['admin'], $plan['cancel']);
             }
         }
+    }
+
+    /**
+     * Con Cuenta corriente: un cobro parcial, un cliente que paga todo (su venta se salda) y un
+     * cobro anulado por error de carga. Cada cobro usa lo que el cliente debe en ese momento;
+     * un cliente sin deuda (otra demostración sin ventas a cuenta) se saltea.
+     */
+    private function seedCollections(): void
+    {
+        if (! Modules::enabled(Module::CurrentAccount)) {
+            return;
+        }
+
+        $methods = PaymentMethod::query()->pluck('id', 'name');
+
+        $this->collectFrom(0, '40', $methods['Transferencia'], $this->users['ana']);
+        $this->collectFrom(4, '100', $methods['Efectivo'], $this->users['luis']);
+
+        $mistaken = $this->collectFrom(3, '25', $methods['Débito'], $this->users['admin']);
+
+        if ($mistaken !== null) {
+            app(CancelPayment::class)->handle($mistaken, $this->users['admin'], 'Error de carga: era de otro cliente');
+        }
+    }
+
+    /**
+     * Cobra un porcentaje de la deuda del cliente (el índice es el de seedCustomers()).
+     */
+    private function collectFrom(int $customer, string $percent, int $methodId, User $actor): ?Payment
+    {
+        $debt = $this->customers[$customer]->accountBalance();
+        $base = Money::percentOf($debt, $percent);
+
+        if (Money::compare($base, '0') <= 0) {
+            return null;
+        }
+
+        return app(CollectPayment::class)->handle($actor, [
+            'customer_id' => $this->customers[$customer]->getKey(),
+            'payment_method_id' => $methodId,
+            'base_amount' => $base,
+            'date' => now()->toDateString(),
+        ]);
     }
 
     /**
@@ -355,7 +445,7 @@ class DemoSeeder extends Seeder
 
     // --- Catálogo web -------------------------------------------------------------
 
-    private function seedCatalog(): void
+    protected function seedCatalog(): void
     {
         if (! Modules::enabled(Module::Catalog) || ! extension_loaded('gd')) {
             return;
@@ -378,7 +468,7 @@ class DemoSeeder extends Seeder
      *
      * @param  array{0: int, 1: int, 2: int}  $rgb
      */
-    private function placeholderImage(array $rgb, string $initial): string
+    protected function placeholderImage(array $rgb, string $initial): string
     {
         $image = imagecreatetruecolor(800, 1000);
 
@@ -401,7 +491,7 @@ class DemoSeeder extends Seeder
      *     published: bool, featured: bool, show_price: bool, color: array{0: int, 1: int, 2: int}
      * }>
      */
-    private function productDefinitions(): array
+    protected function productDefinitions(): array
     {
         $base = ['variants' => [], 'variant_prices' => [], 'leftover' => [], 'published' => true, 'featured' => false, 'show_price' => true];
 
@@ -446,12 +536,16 @@ class DemoSeeder extends Seeder
      * Ventas de los últimos tres meses: [producto, índice de variante, cantidad] por ítem.
      * El día es 0-based dentro del mes; dos ventas se anulan.
      *
+     * `on_account` (solo con Cuenta corriente y cliente): qué porcentaje se cobra en el acto y a
+     * cuántos días vence el saldo; sin el módulo la venta es de contado como el resto.
+     *
      * @return list<array{
      *     month: int, day: int, by: string, customer?: int, pay: list<string>,
-     *     items: list<array{0: string, 1: int, 2: int}>, cancel?: string
+     *     items: list<array{0: string, 1: int, 2: int}>, cancel?: string,
+     *     on_account?: array{paid: int, due_days: int}
      * }>
      */
-    private function salePlan(): array
+    protected function salePlan(): array
     {
         return [
             ['month' => 0, 'day' => 0, 'by' => 'admin', 'customer' => 0, 'pay' => ['Efectivo'], 'items' => [['remera-basica', 0, 2]]],
@@ -460,22 +554,22 @@ class DemoSeeder extends Seeder
             ['month' => 0, 'day' => 2, 'by' => 'ana', 'customer' => 1, 'pay' => ['Tarjeta 6 cuotas'], 'items' => [['campera-puffer', 0, 1]]],
             ['month' => 0, 'day' => 3, 'by' => 'admin', 'pay' => ['Transferencia', 'Efectivo'], 'items' => [['buzo-canguro', 2, 1], ['medias', 0, 3]]],
             ['month' => 0, 'day' => 4, 'by' => 'luis', 'pay' => ['Débito'], 'items' => [['remera-estampada', 1, 2]]],
-            ['month' => 0, 'day' => 5, 'by' => 'ana', 'customer' => 2, 'pay' => ['Tarjeta 1 cuota'], 'items' => [['camisa-lino', 1, 1], ['cinturon', 0, 1]]],
+            ['month' => 0, 'day' => 5, 'by' => 'ana', 'customer' => 2, 'pay' => ['Tarjeta 1 cuota'], 'items' => [['camisa-lino', 1, 1], ['cinturon', 0, 1]], 'on_account' => ['paid' => 0, 'due_days' => 20]],
             ['month' => 0, 'day' => 6, 'by' => 'admin', 'pay' => ['Efectivo'], 'items' => [['pantalon-sastrero', 0, 1]], 'cancel' => 'El cliente devolvió el pedido'],
             ['month' => 0, 'day' => 7, 'by' => 'luis', 'pay' => ['Transferencia'], 'items' => [['mochila', 0, 1]]],
             ['month' => 0, 'day' => 8, 'by' => 'ana', 'pay' => ['Efectivo', 'Débito'], 'items' => [['remera-basica', 3, 1], ['gorra', 0, 1]]],
-            ['month' => 0, 'day' => 9, 'by' => 'admin', 'customer' => 3, 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['jean-recto', 2, 2]]],
+            ['month' => 0, 'day' => 9, 'by' => 'admin', 'customer' => 3, 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['jean-recto', 2, 2]], 'on_account' => ['paid' => 30, 'due_days' => 30]],
             ['month' => 0, 'day' => 10, 'by' => 'luis', 'pay' => ['Efectivo'], 'items' => [['remera-basica', 1, 3]]],
             ['month' => 1, 'day' => 2, 'by' => 'ana', 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['campera-puffer', 1, 1]]],
-            ['month' => 1, 'day' => 4, 'by' => 'admin', 'customer' => 0, 'pay' => ['Transferencia'], 'items' => [['remera-basica', 2, 2], ['cinturon', 0, 1]]],
+            ['month' => 1, 'day' => 4, 'by' => 'admin', 'customer' => 0, 'pay' => ['Transferencia'], 'items' => [['remera-basica', 2, 2], ['cinturon', 0, 1]], 'on_account' => ['paid' => 50, 'due_days' => 20]],
             ['month' => 1, 'day' => 5, 'by' => 'luis', 'pay' => ['Débito'], 'items' => [['buzo-canguro', 0, 2]]],
             ['month' => 1, 'day' => 8, 'by' => 'ana', 'pay' => ['Efectivo'], 'items' => [['camisa-lino', 0, 1]]],
             ['month' => 1, 'day' => 10, 'by' => 'admin', 'pay' => ['Efectivo'], 'items' => [['gorra', 0, 3]]],
-            ['month' => 1, 'day' => 12, 'by' => 'luis', 'customer' => 4, 'pay' => ['Tarjeta 6 cuotas'], 'items' => [['jean-recto', 0, 1], ['remera-estampada', 0, 1]]],
+            ['month' => 1, 'day' => 12, 'by' => 'luis', 'customer' => 4, 'pay' => ['Tarjeta 6 cuotas'], 'items' => [['jean-recto', 0, 1], ['remera-estampada', 0, 1]], 'on_account' => ['paid' => 0, 'due_days' => 45]],
             ['month' => 1, 'day' => 15, 'by' => 'ana', 'pay' => ['Tarjeta 1 cuota'], 'items' => [['pantalon-sastrero', 2, 1]], 'cancel' => 'Error de carga: se cobró de más'],
             ['month' => 1, 'day' => 18, 'by' => 'admin', 'pay' => ['Transferencia'], 'items' => [['mochila', 0, 1]]],
             ['month' => 1, 'day' => 20, 'by' => 'luis', 'pay' => ['Efectivo', 'Transferencia'], 'items' => [['remera-basica', 4, 2]]],
-            ['month' => 1, 'day' => 24, 'by' => 'ana', 'customer' => 5, 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['campera-puffer', 2, 1]]],
+            ['month' => 1, 'day' => 24, 'by' => 'ana', 'customer' => 5, 'pay' => ['Tarjeta 3 cuotas'], 'items' => [['campera-puffer', 2, 1]], 'on_account' => ['paid' => 40, 'due_days' => 10]],
             ['month' => 2, 'day' => 5, 'by' => 'admin', 'pay' => ['Efectivo'], 'items' => [['remera-estampada', 2, 1]]],
             ['month' => 2, 'day' => 14, 'by' => 'luis', 'pay' => ['Débito'], 'items' => [['buzo-canguro', 1, 1]]],
             ['month' => 2, 'day' => 22, 'by' => 'ana', 'pay' => ['Efectivo'], 'items' => [['jean-recto', 3, 1], ['medias', 0, 2]]],

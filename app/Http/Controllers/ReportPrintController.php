@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\Module;
 use App\Facades\Modules;
 use App\Models\User;
+use App\Services\Reports\AccountBalancesReport;
+use App\Services\Reports\CollectionsReport;
 use App\Services\Reports\PaymentsReport;
 use App\Services\Reports\PurchasesReport;
 use App\Services\Reports\Report;
@@ -30,6 +32,8 @@ class ReportPrintController extends Controller
         'ventas' => ['title' => 'Ventas y ganancia', 'service' => SalesReport::class],
         'cobros' => ['title' => 'Cobros realizados', 'service' => PaymentsReport::class],
         'compras' => ['title' => 'Compras por proveedor', 'service' => PurchasesReport::class, 'requires' => Module::Purchases],
+        'saldos' => ['title' => 'Saldos pendientes por cliente', 'service' => AccountBalancesReport::class, 'requires' => Module::CurrentAccount],
+        'cobranza' => ['title' => 'Cobranza del mes', 'service' => CollectionsReport::class, 'requires' => Module::CurrentAccount],
     ];
 
     public function __invoke(Request $request, string $report): View|RedirectResponse
@@ -50,12 +54,10 @@ class ReportPrintController extends Controller
         $service = app($definition['service']);
         $filters = $request->query();
 
-        [$from, $to] = $service::period($filters);
-
         return view('reports.print', [
             'business' => app(SiteContent::class)->name(),
             'title' => $definition['title'],
-            'period' => $from->format('d/m/Y').' al '.$to->format('d/m/Y'),
+            'period' => $service->describe($filters),
             'result' => $service->run($filters),
             'printedAt' => now()->format('d/m/Y H:i'),
         ]);
