@@ -58,6 +58,14 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Informes)
+
+- **Ganancia = subtotal de ítems − costo.** El recargo o descuento de los medios de pago (`sales.adjustment`) se informa en su propia columna y no entra en la ganancia, como pide el plan base. El margen es la ganancia sobre el subtotal.
+- **Solo los informes sin dependencias.** Ventas y ganancia y Cobros realizados se hicieron ahora; Saldos pendientes y Cobranza del mes esperan a Cuenta corriente, y Compras por proveedor a Compras. Cada uno se suma al grupo «Informes».
+- **Un servicio por informe** (`app/Services/Reports`): recibe filtros y devuelve columnas, filas y totales. La pantalla de Filament y la impresión consumen el mismo resultado.
+- **Tabla propia, no de Filament.** Los datos son agregados en PHP (no una consulta de un modelo), así que se muestran con una tabla simple compartida por pantalla e impresión. No se puede ordenar ni ocultar columnas.
+- **La impresión va en el dominio del panel** con la sesión del administrador; los filtros viajan en la URL (fechas e ids, sin datos personales). Un visitante sin sesión es redirigido al acceso; un vendedor recibe 403.
+
 ## Decisiones de diseño (Fase 7)
 
 - **La demostración usa las acciones reales** (`CreateProduct`, `GenerateVariants`, `CountStock`, `CreateSale`, `CancelSale`, `CreateUser`): totales, stock, movimientos, eventos y actividad son los del sistema, no filas insertadas a mano. Solo los maestros sin regla de negocio (categorías, clientes) se crean directo.

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.0 — Informes (Fase 11, parte núcleo)
+
+Requiere migración: no.
+
+- **Módulo Informes** (grupo «Informes» en el panel, solo administrador): dos informes que no dependen de otros módulos.
+  - **Ventas y ganancia**: ventas del período sin anuladas, con subtotal, ajustes de los medios de pago, total, costo, ganancia y margen. Filtros por fechas y vendedor; en detalle, agrupadas por vendedor o por producto.
+  - **Cobros realizados**: cobros del período sin anulados, con subtotales por medio de pago y por cobrador. Filtros por fechas, medio de pago y cobrador.
+- **La ganancia no incluye el recargo ni el descuento del medio de pago**: es el subtotal de los ítems menos su costo. El ajuste se muestra aparte.
+- **Versión imprimible** de cada informe en otra pestaña (`/informes/{ventas|cobros}/imprimir`, HTML con estilos de impresión, sin librería de PDF), con los mismos filtros que la pantalla. El vendedor recibe 403; con el módulo apagado, 404.
+- Servicios `SalesReport` y `PaymentsReport` (`app/Services/Reports`): pantalla e impresión salen del mismo resultado, y los totales coinciden con los del escritorio.
+- **Distribución**: filtros en una fila, indicadores resumen arriba (ventas, costo, ganancia y margen; cobrado, base, ajustes y cobros), botón «Imprimir» en el encabezado y tablas compactas que no parten el texto, con los importes en pesos sin repetir el símbolo en cada celda. Los subtotales de cobros van lado a lado.
+- La tabla de los informes es simple (no se ordena ni se ocultan columnas, a diferencia de las listas del panel).
+- Pendiente: Saldos pendientes y Cobranza del mes (requieren Cuenta corriente) y Compras por proveedor (requiere Compras).
+
 ## 0.8.4 — Modo de color de la landing
 
 Requiere migración: no.
