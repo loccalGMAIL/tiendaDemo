@@ -33,6 +33,10 @@ Cada tipo de cosa se corta en un solo lugar. Cuando un recurso, página, ruta o 
 
 Las acciones de negocio del núcleo no llaman directamente a un módulo: preguntan `Modules::enabled()` o disparan un evento que el módulo escucha. Las columnas que un módulo agrega a una tabla del núcleo existen siempre y son opcionales.
 
+### Páginas que piden más de un módulo
+
+Si una página necesita otro módulo además del suyo (un informe de Compras pide también Informes), la clase declara el principal con `module()` y el resto sobrescribiendo `alsoRequires(): array` (por ejemplo `return [Module::Purchases];`). El menú, el acceso y el middleware de la ruta exigen todos. No hay que redefinir `canAccess()`. La ruta de impresión que no es de Filament agrega el mismo `module:` o lo verifica en el controlador.
+
 ### Páginas y widgets solo para el administrador
 
 Como el trait del módulo ocupa `canAccess()` / `canView()`, lo que además es solo del administrador extiende una base que lo resuelve (`AdministratorPage`, `AdministratorStatsWidget`, `AdministratorTableWidget`) y suma el trait del módulo: `class StockCount extends AdministratorPage { use BelongsToModule; … }`.

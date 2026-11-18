@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0 — Informe de compras por proveedor
+
+Requiere migración: no.
+
+- **Compras por proveedor** (grupo «Informes»): facturas de compra vigentes del período, sin anuladas, **agrupadas por proveedor** (facturas, total comprado y factura promedio) o **en detalle**, una fila por factura con su orden de compra. Filtros por fechas y proveedor. Con indicadores resumen, tabla compacta y versión imprimible (`/informes/compras/imprimir`) como los otros informes.
+- **Pide los módulos Informes y Compras a la vez**: con cualquiera de los dos apagado, la pantalla y la impresión responden 404 y no aparece en el menú. El vendedor recibe 403.
+- `BelongsToModule` suma el gancho opcional `alsoRequires()` para las páginas que dependen de más de un módulo (menú, acceso y ruta lo respetan); la clase no tiene que redefinir `canAccess()`. Ver `docs/modulos.md`.
+- Servicio `PurchasesReport`. El informe comparte pantalla, filtros y estilos con los de Ventas y Cobros.
+- Con esto los informes de Cuenta corriente (Saldos pendientes y Cobranza del mes) son los únicos que faltan: esperan a ese módulo.
+
 ## 0.10.0 — Compras (Fase 10)
 
 Requiere migración: sí (`suppliers`, `purchase_orders`, `purchase_order_items`, `purchases`, `purchase_items` y `products.supplier_id`). Las tablas existen siempre; con el módulo apagado no se muestra nada y no se pierde ningún dato.
@@ -15,7 +25,7 @@ Requiere migración: sí (`suppliers`, `purchase_orders`, `purchase_order_items`
 - **Escritorio** (administrador): compras del mes, órdenes sin recibir y últimas compras.
 - **Impresión de la orden** en otra pestaña (`/compras/ordenes/{id}/imprimir`); el vendedor recibe 403 y con el módulo apagado, 404.
 - Acciones `CreatePurchaseOrder`, `UpdatePurchaseOrder`, `IssuePurchaseOrder`, `CancelPurchaseOrder`, `CreatePurchase` y `CancelPurchase`; eventos `PurchaseCreated` y `PurchaseCancelled` (dentro de la transacción, como los de venta) que escucha Stock. Altas, emisiones y anulaciones quedan en la actividad.
-- Pendiente para una próxima versión: el informe «Compras por proveedor» (requiere Informes y Compras) y las compras en la demostración.
+- Pendiente para una próxima versión: el informe «Compras por proveedor» (llegó en la 0.11.0) y las compras en la demostración.
 
 ## 0.9.0 — Informes (Fase 11, parte núcleo)
 

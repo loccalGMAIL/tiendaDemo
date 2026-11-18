@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use App\Models\User;
 use App\Services\Reports\PaymentsReport;
+use App\Services\Reports\PurchasesReport;
 use App\Services\Reports\Report;
 use App\Services\Reports\SalesReport;
 use App\Services\SiteContent;
@@ -18,10 +21,15 @@ use Illuminate\Http\Request;
  */
 class ReportPrintController extends Controller
 {
-    /** @var array<string, array{title: string, service: class-string<Report>}> */
+    /**
+     * Cada informe puede exigir además el módulo de lo que informa (con Informes ya encendido).
+     *
+     * @var array<string, array{title: string, service: class-string<Report>, requires?: Module}>
+     */
     private const REPORTS = [
         'ventas' => ['title' => 'Ventas y ganancia', 'service' => SalesReport::class],
         'cobros' => ['title' => 'Cobros realizados', 'service' => PaymentsReport::class],
+        'compras' => ['title' => 'Compras por proveedor', 'service' => PurchasesReport::class, 'requires' => Module::Purchases],
     ];
 
     public function __invoke(Request $request, string $report): View|RedirectResponse
@@ -36,6 +44,9 @@ class ReportPrintController extends Controller
         abort_unless(array_key_exists($report, self::REPORTS), 404);
 
         $definition = self::REPORTS[$report];
+
+        abort_unless(! isset($definition['requires']) || Modules::enabled($definition['requires']), 404);
+
         $service = app($definition['service']);
         $filters = $request->query();
 

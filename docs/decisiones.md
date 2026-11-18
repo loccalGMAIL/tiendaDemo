@@ -67,9 +67,12 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Orden y factura**: una orden tiene a lo sumo una factura vigente. Anular la factura reabre la orden (emitida, con lo recibido en cero); una orden con factura vigente no se anula. Una línea en cero en la factura de una orden es lo que no llegó y no se guarda.
 - **Número de factura**: único por proveedor entre las facturas vigentes (no es una restricción de la base, porque una anulada libera el número).
 - **Sin ajustes propios** en Plataforma: el módulo no tiene configuración.
-- **Informe «Compras por proveedor»**: queda para otra versión. Pide dos módulos a la vez (Informes y Compras), lo que requiere un cambio chico en el corte por módulo.
+- **Informe «Compras por proveedor»**: llegó en la 0.11.0 (ver Informes). Pide dos módulos a la vez (Informes y Compras).
 
 ## Decisiones de diseño (Informes)
+
+- **Compras por proveedor** (0.11.0): cuenta las facturas vigentes por su fecha de factura, sin anuladas. Agrupa por proveedor (por defecto) o muestra el detalle. Pide Informes **y** Compras: el menú, el acceso, la ruta de la pantalla y la de impresión responden 404 si falta cualquiera de los dos.
+- **Más de un módulo por página**: `BelongsToModule` acepta `alsoRequires()` (lista vacía por defecto) en lugar de que cada página redefina `canAccess()`, así el test de arquitectura sigue garantizando que nadie tapa el corte.
 
 - **Ganancia = subtotal de ítems − costo.** El recargo o descuento de los medios de pago (`sales.adjustment`) se informa en su propia columna y no entra en la ganancia, como pide el plan base. El margen es la ganancia sobre el subtotal.
 - **Solo los informes sin dependencias.** Ventas y ganancia y Cobros realizados se hicieron ahora; Saldos pendientes y Cobranza del mes esperan a Cuenta corriente, y Compras por proveedor a Compras. Cada uno se suma al grupo «Informes».
