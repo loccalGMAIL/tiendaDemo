@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.0 — Compras (Fase 10)
+
+Requiere migración: sí (`suppliers`, `purchase_orders`, `purchase_order_items`, `purchases`, `purchase_items` y `products.supplier_id`). Las tablas existen siempre; con el módulo apagado no se muestra nada y no se pierde ningún dato.
+
+- **Módulo Compras** (grupo «Compras» del panel, solo administrador; el vendedor no ve costos de compra):
+  - **Proveedores**: alta, edición y baja. Con órdenes o facturas no se borran: se desactivan.
+  - **Órdenes de compra** (`OC-00001`): borrador → emitida → recibida, o anulada. Se editan solo en borrador, se emiten, se imprimen (sin costos) y se anulan con motivo.
+  - **Facturas de compra**: directas o desde una orden emitida, con lo pedido precargado para corregir lo que llegó (0 si no llegó). No llega más de lo pedido ni un producto que no estaba en la orden, y tiene que llegar algo. El número no se repite por proveedor entre las vigentes (se permite si la anterior está anulada).
+  - **Anular una factura** pide motivo, deja la orden otra vez emitida y no cambia el costo de los productos.
+- **El costo de la factura queda como costo del producto** (la última gana). Las ventas ya hechas no cambian: copiaron su costo al vender.
+- **Con Stock**: la factura suma a cada variante (movimiento «Compra») y anularla resta lo que sumó. **No se puede anular si dejaría el stock en negativo**; la anulación se rechaza completa. Con Stock apagado no se toca el stock, y anular revierte exactamente lo que esa factura sumó aunque el módulo se haya apagado después.
+- **Proveedor habitual** en el producto (campo, columna y filtro, solo con Compras encendido).
+- **Escritorio** (administrador): compras del mes, órdenes sin recibir y últimas compras.
+- **Impresión de la orden** en otra pestaña (`/compras/ordenes/{id}/imprimir`); el vendedor recibe 403 y con el módulo apagado, 404.
+- Acciones `CreatePurchaseOrder`, `UpdatePurchaseOrder`, `IssuePurchaseOrder`, `CancelPurchaseOrder`, `CreatePurchase` y `CancelPurchase`; eventos `PurchaseCreated` y `PurchaseCancelled` (dentro de la transacción, como los de venta) que escucha Stock. Altas, emisiones y anulaciones quedan en la actividad.
+- Pendiente para una próxima versión: el informe «Compras por proveedor» (requiere Informes y Compras) y las compras en la demostración.
+
 ## 0.9.0 — Informes (Fase 11, parte núcleo)
 
 Requiere migración: no.

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\PurchaseOrderPrintController;
 use App\Http\Controllers\ReportPrintController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,13 @@ Route::domain(config('domains.landing'))->group(function () {
 });
 
 Route::domain(config('domains.panel'))->get('/up', fn () => response('OK'))->name('health');
+
+// Orden de compra imprimible (módulo Compras): con el módulo apagado responde 404; solo administradores.
+Route::domain(config('domains.panel'))
+    ->middleware('module:purchases')
+    ->get('/compras/ordenes/{order}/imprimir', PurchaseOrderPrintController::class)
+    ->whereNumber('order')
+    ->name('purchase-orders.print');
 
 // Informes imprimibles: con el módulo apagado responden 404; solo para administradores.
 Route::domain(config('domains.panel'))

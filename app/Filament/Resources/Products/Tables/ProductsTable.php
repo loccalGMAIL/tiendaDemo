@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Products\Tables;
 use App\Enums\Module;
 use App\Facades\Modules;
 use App\Models\Category;
+use App\Models\Supplier;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -37,6 +38,12 @@ class ProductsTable
                     ->label('Categoría')
                     ->placeholder('—')
                     ->sortable(),
+                // Módulo Compras.
+                TextColumn::make('supplier.name')
+                    ->label('Proveedor')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn (): bool => Modules::enabled(Module::Purchases)),
                 TextColumn::make('price')
                     ->label('Precio')
                     ->money('ARS', locale: 'es_AR')
@@ -68,6 +75,10 @@ class ProductsTable
                 SelectFilter::make('category_id')
                     ->label('Categoría')
                     ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all()),
+                SelectFilter::make('supplier_id')
+                    ->label('Proveedor habitual')
+                    ->options(fn (): array => Supplier::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->visible(fn (): bool => Modules::enabled(Module::Purchases)),
                 TernaryFilter::make('active')->label('Activo'),
                 TernaryFilter::make('is_published')
                     ->label('Publicado en el catálogo')
