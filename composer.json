@@ -51,15 +51,26 @@
             "@php artisan dev"
         ],
         "test": [
+            "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
             "@test:core",
             "@test:all-modules"
         ],
         "test:core": [
+            "Composer\\Config::disableProcessTimeout",
             "@putenv TEST_MODULES=none",
-            "@php artisan test --compact"
+            "@php artisan test --parallel --compact"
         ],
         "test:all-modules": [
+            "Composer\\Config::disableProcessTimeout",
+            "@putenv TEST_MODULES=all",
+            "@php artisan test --parallel --compact"
+        ],
+        "test:seq": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "@putenv TEST_MODULES=none",
+            "@php artisan test --compact",
             "@putenv TEST_MODULES=all",
             "@php artisan test --compact"
         ],

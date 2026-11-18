@@ -44,7 +44,7 @@ class ReportPrintController extends Controller
             return redirect()->to(Filament::getPanel('admin')->getLoginUrl() ?? '/');
         }
 
-        abort_unless($user->isAdmin(), 403);
+        abort_unless($user->active && $user->isAdmin(), 403);
         abort_unless(array_key_exists($report, self::REPORTS), 404);
 
         $definition = self::REPORTS[$report];

@@ -126,6 +126,15 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Administrador de la demo**: el de `.env` si existe; si no, `admin@demo.test`. Vendedores `ana@demo.test` y `luis@demo.test` con `DEMO_PASSWORD`.
 - **`public/build` versionado**: actualizar un servidor no requiere Node. Hay que correr `npm run build` y commitear antes de cada versión.
 
+## Decisiones de diseño (Calidad, 0.15.0)
+
+- **`preventLazyLoading` fuera de producción**: un N+1 rompe en desarrollo y en las pruebas; en producción no rompe la pantalla. `Product::variants()` usa `chaperone('product')` y las listas precargan con `withExists` lo que las policies necesitan.
+- **Policies con dato precargado**: `delete` usa `sales_exists` / `sale_items_exists` si el listado lo trae y consulta solo si no está.
+- **Cabeceras de seguridad sin CSP**: Filament, Livewire y Alpine usan scripts y estilos en línea; una política de contenido necesitaría nonces y se deja para más adelante.
+- **Sin SVG subidos**: solo imágenes de píxeles; un SVG puede ejecutar scripts y se sirve desde el disco público.
+- **La matriz de autorización es la red de seguridad**: toda ruta nueva tiene que declarar quién entra, o la prueba falla.
+- **Mutation testing pendiente**: hace falta un driver de cobertura (xdebug o pcov) que este PHP no tiene.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

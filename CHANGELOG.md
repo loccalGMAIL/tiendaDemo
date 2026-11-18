@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.15.0 — Revisión de calidad (sin funciones nuevas)
+
+Requiere migración: no.
+
+- **Pruebas más rápidas y sin cortes**: `composer test` corre en paralelo y sin el límite de 300 s de composer (867 pruebas en 72 s con los módulos apagados y 83 s con todos encendidos, antes 100 a 285 s por pasada). `composer test:seq` las corre una por una para depurar.
+- **Consultas**: fuera de producción, cargar una relación «a demanda» ahora lanza una excepción (`preventLazyLoading`). Se corrigieron los N+1 que aparecieron: variantes y su producto, la grilla de stock y las listas de **clientes** y **productos** (la policy de borrar consultaba una vez por fila; ahora usa un dato precargado). Pruebas de presupuesto de consultas por pantalla y de que las listas no hacen más consultas con más filas.
+- **Seguridad**:
+  - Cabeceras en todas las respuestas (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`; HSTS solo por HTTPS).
+  - **Impresión de informes y de órdenes de compra: un usuario desactivado con la sesión abierta ya no puede imprimir** (antes solo se miraba el rol).
+  - Logos, favicon e imagen para compartir ya no aceptan **SVG** (podía llevar scripts y se sirve del disco público).
+  - El catálogo público limita las peticiones por IP (120 por minuto).
+  - **Matriz de autorización** como prueba: cada ruta propia contra invitado, vendedor, administrador, SuperAdmin y administrador inactivo; falla si aparece una ruta sin declarar. Pruebas de que un administrador no puede crear ni ascender a SuperAdmin.
+  - `composer audit` y `npm audit`: sin vulnerabilidades.
+- **Calidad estática**: Larastan sube al nivel 6 (0 errores).
+- **Recorrida en el navegador** con datos reales (ventas a cuenta, vencida y en cuotas, cobro, orden y factura de compra, informes e impresiones): sin errores de consola y con los números cuadrando a mano.
 ## 0.14.0 — Login con Google (Fase 12)
 
 Requiere migración: no (`users.google_id` ya existía).
