@@ -60,6 +60,17 @@ El archivo [`.env.example`](.env.example) está comentado. Las propias de la pla
 | `DEMO_PASSWORD` | Contraseña de los usuarios de demostración |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Módulo Login con Google; sin ellas no se puede habilitar |
 
+### Login con Google
+
+El módulo agrega el botón «Ingresar con Google» al login del panel del negocio (no al de la plataforma). **No registra usuarios**: solo entra quien ya existe, está activo y es administrador o vendedor; se lo busca por su cuenta de Google ya vinculada o por su correo (que Google tiene que haber verificado), y en el primer ingreso se vincula la cuenta. Cualquier otro caso vuelve al login con el mismo aviso que una contraseña incorrecta.
+
+Alta de las credenciales (una por cliente), en [Google Cloud Console](https://console.cloud.google.com/) → *APIs y servicios* → *Credenciales*:
+
+1. Crear un **ID de cliente de OAuth** de tipo *Aplicación web*.
+2. En *URI de redireccionamiento autorizados* cargar `https://{PANEL_DOMAIN}/auth/google/callback` (en local, la misma ruta con `http://` y el puerto).
+3. Copiar el ID y el secreto al `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y, si hace falta, `GOOGLE_REDIRECT_URI`) y correr `php artisan config:cache` si la configuración está cacheada.
+4. Encender el módulo: `php artisan modules:enable google-login` o desde el panel de superadmin. Sin credenciales no se puede encender.
+
 ## Alta de un cliente nuevo
 
 1. Crear la base de datos y el `.env` (dominios, usuarios iniciales, credenciales de Google si aplica).
