@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0 — Login con Google (Fase 12)
+
+Requiere migración: no (`users.google_id` ya existía).
+
+- **Botón «Ingresar con Google»** en el login del panel del negocio, solo con el módulo encendido (el login de la plataforma no lo lleva). Sin credenciales (`GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`) el módulo no se puede encender, como hasta ahora.
+- **No registra usuarios**: solo entra quien ya existe, está **activo** y es **administrador o vendedor**. Se lo busca por su `google_id` y, si no hay, por su correo (sin distinguir mayúsculas) y se guarda el `google_id`.
+- **Vinculación segura**: solo se vincula por correo si Google lo informa como **verificado**, y una cuenta ya vinculada a otra de Google no se pisa.
+- **Mismo aviso para todo rechazo**: usuario inexistente, inactivo, SuperAdmin, correo sin verificar o cuenta de otra persona vuelven al login con «Estas credenciales no coinciden con nuestros registros.», para no revelar quién existe. Si el proveedor falla o se deniega el permiso: «No pudimos completar el ingreso con Google».
+- **Actividad**: el ingreso queda como cualquier otro; el fallido, como «Intento de ingreso con Google fallido» con el correo (y, si el usuario existe, como su autor: un intento sobre un SuperAdmin queda oculto al cliente).
+- Rutas `GET /auth/google/redirect` y `GET /auth/google/callback` en el dominio del panel, con límite de intentos y `404` con el módulo apagado. Siempre se pide elegir la cuenta de Google. Sin `GOOGLE_REDIRECT_URI` se usa la ruta del callback.
+- Nuevos: `GoogleLoginController` y la acción `FindUserForGoogleLogin`. README con el alta de las credenciales en Google Cloud Console.
+- Con esto están construidas todas las fases del plan base (0 a 12). Fuera de alcance: vincular o desvincular la cuenta de Google desde el perfil, forzar Google como único acceso, login con Google en la plataforma.
+
 ## 0.13.0 — Cuotas propias (Fase 9)
 
 Requiere migración: sí (tabla `financing_plans` y `sales.financing_surcharge` / `financing_surcharge_percent`; `financing_plan_id`, `installments_count` y `first_due_date` ya existían). Las tablas y columnas existen siempre; con el módulo apagado una venta a cuenta sigue teniendo un único vencimiento.

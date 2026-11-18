@@ -58,6 +58,16 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Login con Google)
+
+- **No registra usuarios**: el administrador del cliente da de alta a las personas; Google solo es otra forma de entrar. Entra un usuario existente, activo, administrador o vendedor (`User::canAccessPanel(admin)`).
+- **Vinculación más estricta que el plan base**: por correo solo si Google lo informa como verificado (`email_verified`); una cuenta ya vinculada a otro `google_id` no se pisa. Después de vinculada manda el `google_id`, aunque el correo cambie.
+- **Un solo mensaje para todo rechazo** (el de las credenciales incorrectas): no se distingue inexistente, inactivo, SuperAdmin, sin verificar o cuenta ajena. El SuperAdmin tampoco puede entrar por Google al panel del negocio, y el panel `superadmin` no lleva el botón.
+- **Lógica en una acción** (`FindUserForGoogleLogin`) y no en el controlador; el controlador solo habla con Socialite, inicia la sesión (`Auth::login` dispara el evento que ya registra el ingreso) y registra el fallo.
+- **El fallo se atribuye al usuario si existe**, igual que `LogFailedLogin`: un intento sobre un SuperAdmin queda fuera de la actividad que ve el cliente.
+- **La URI de redirección** sale de `GOOGLE_REDIRECT_URI` o, si está vacía, de la ruta del callback; se fija antes de crear el proveedor porque tiene que ser la misma al redirigir y al canjear el código. Se agrega `prompt=select_account` a la URL de Google para que siempre pida elegir la cuenta.
+- **El botón es un render hook** del panel del negocio (`AUTH_LOGIN_FORM_AFTER`): la vista devuelve vacío con el módulo apagado, así que no hay ni rastro. Estilos propios en línea (no dependen de compilar).
+
 ## Decisiones de diseño (Cuotas propias)
 
 - **El recargo de financiación va aparte del total de la venta.** `sales.total` sigue siendo subtotal + ajustes de los medios de pago; el recargo se guarda en `financing_surcharge` (con su porcentaje) y se asienta como un débito propio en la cuenta del cliente. Ventas y ganancia no cambia: el interés se ve en la cuenta, en los vencimientos y en la ganancia futura. Invariante: `total − down_payment + financing_surcharge = financed_amount`.

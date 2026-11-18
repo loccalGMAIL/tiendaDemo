@@ -47,6 +47,8 @@ El núcleo no llama a los módulos: dispara eventos. `SaleCreated` y `SaleCancel
 
 Cuenta corriente sigue el mismo camino: `RegisterAccountForSale` arma el vencimiento y asienta el libro del cliente cuando la venta deja saldo, y `ReverseAccountForCancelledSale` lo revierte al anular (y rechaza la anulación si ya hay cobros imputados). Lo único que el núcleo pregunta directamente es `Modules::enabled(CurrentAccount)` en `CreateSale`, para admitir cobros parciales o ninguno y exigir cliente y vencimiento cuando queda saldo. Cuotas propias suma una pregunta más, `Modules::enabled(Installments)`, para aceptar un plan de financiación (con su recargo y el mes de la primera cuota) en lugar del vencimiento único; el listener de Cuenta corriente arma una cuota por cada fila del cronograma de `InstallmentSchedule`.
 
+Login con Google no escucha eventos de ventas: agrega rutas (`auth/google/*`, con `module:google-login`) y un botón por render hook en el login del panel del negocio (ver `docs/decisiones.md`).
+
 ## Cómo agregar un módulo
 
 1. Agregar el caso a `App\Enums\Module` (después de los que requiere) con etiqueta, descripción, `requires()`, `missingConfiguration()` y `defaultSettings()` si corresponde.

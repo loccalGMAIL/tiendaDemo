@@ -9,6 +9,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -29,6 +30,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            // Módulo Login con Google: el botón se arma solo con el módulo encendido (la vista
+            // devuelve vacío si no). El panel superadmin no lo lleva.
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): string => view('filament.auth.google-login')->render())
             ->profile()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             // Escritorio propio (App\Filament\Pages\Dashboard) y widgets del núcleo y de los módulos.
