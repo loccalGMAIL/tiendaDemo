@@ -353,10 +353,12 @@ class SaleForm
         }
 
         $rawPayments = array_values($get('payments') ?? []);
-        $methods = PaymentMethod::query()
-            ->whereIn('id', collect($rawPayments)->pluck('payment_method_id')->filter())
-            ->get()
-            ->keyBy('id');
+        $methodIds = collect($rawPayments)->pluck('payment_method_id')->filter();
+
+        // Sin medio de pago elegido no hay nada que consultar (el formulario recalcula varias veces por pantalla).
+        $methods = $methodIds->isEmpty()
+            ? collect()
+            : PaymentMethod::query()->whereIn('id', $methodIds)->get()->keyBy('id');
 
         $payments = [];
 

@@ -125,6 +125,18 @@ it('sube los logos, el favicon y la imagen para compartir al disco público', fu
         ->and($appearance->shareImageUrl())->not->toBeNull();
 });
 
+it('no acepta SVG ni otros archivos que no sean imágenes de píxeles (un SVG puede traer scripts)', function (string $slot) {
+    $svg = UploadedFile::fake()->createWithContent('marca.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+
+    appearancePage()
+        ->fillForm([$slot => $svg])
+        ->call('save')
+        ->assertHasFormErrors([$slot]);
+
+    expect(app(Appearance::class)->files())->not->toHaveKey($slot);
+    Storage::disk('public')->assertDirectoryEmpty('branding');
+})->with(['logo_light', 'logo_dark', 'logo_login', 'favicon', 'share_image']);
+
 it('quitar un logo borra el archivo y vuelve a mostrar el nombre', function () {
     $page = appearancePage()
         ->fillForm(['logo_light' => UploadedFile::fake()->image('claro.png')])

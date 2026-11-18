@@ -12,8 +12,9 @@ use Illuminate\Support\Facades\Route;
 Route::domain(config('domains.landing'))->group(function () {
     Route::get('/', LandingController::class)->name('landing');
 
-    // Catálogo web: con el módulo apagado estas rutas responden 404.
-    Route::middleware('module:catalog')->group(function () {
+    // Catálogo web: con el módulo apagado estas rutas responden 404. Público, así que con tope por IP
+    // (120 por minuto, de sobra para navegar) para que un robot no pueda hacer búsquedas sin parar.
+    Route::middleware(['module:catalog', 'throttle:120,1'])->group(function () {
         Route::get('/catalogo', [CatalogController::class, 'index'])->name('catalog.index');
         Route::get('/catalogo/{slug}', [CatalogController::class, 'category'])->where('slug', '[a-z0-9\-]+')->name('catalog.category');
         Route::get('/producto/{slug}', [CatalogController::class, 'show'])->where('slug', '[a-z0-9\-]+')->name('catalog.product');

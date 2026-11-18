@@ -24,7 +24,7 @@ class PurchaseOrderPrintController extends Controller
             return redirect()->to(Filament::getPanel('admin')->getLoginUrl() ?? '/');
         }
 
-        abort_unless($user->isAdmin(), 403);
+        abort_unless($user->active && $user->isAdmin(), 403);
 
         $purchaseOrder = PurchaseOrder::query()->with(['supplier', 'items.variant.product'])->findOrFail($order);
 

@@ -14,6 +14,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
     {
         // En producción no se pueden correr migrate:fresh, db:wipe ni similares por accidente.
         DB::prohibitDestructiveCommands($this->app->isProduction());
+
+        // Fuera de producción, cargar una relación «a demanda» dentro de un listado (el clásico N+1)
+        // lanza una excepción: se nota en desarrollo y en los tests. En producción no rompe la pantalla.
+        Model::preventLazyLoading(! $this->app->isProduction());
 
         $this->configureFilamentDefaults();
         $this->registerVersionHooks();

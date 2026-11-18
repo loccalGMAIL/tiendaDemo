@@ -78,7 +78,7 @@ class CollectionsReportPage extends ReportPage
         return [
             ['label' => 'A cobrar', 'value' => Money::format($result['totals']['balance'])],
             ['label' => 'Vencimientos', 'value' => (string) count($result['rows'])],
-            ['label' => 'Clientes', 'value' => (string) collect($result['rows'])->pluck('label')->unique()->count()],
+            ['label' => 'Clientes', 'value' => (string) count(array_unique(array_column($result['rows'], 'label')))],
         ];
     }
 }

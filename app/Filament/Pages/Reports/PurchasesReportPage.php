@@ -83,7 +83,7 @@ class PurchasesReportPage extends ReportPage
     private function suppliersCount(array $result): int
     {
         if ($result['group'] === 'detail') {
-            return collect($result['rows'])->pluck('supplier')->unique()->count();
+            return count(array_unique(array_column($result['rows'], 'supplier')));
         }
 
         return count($result['rows']);

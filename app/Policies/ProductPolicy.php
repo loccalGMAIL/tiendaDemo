@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Models\Product;
-use App\Models\SaleItem;
 use App\Models\User;
 
 class ProductPolicy
@@ -33,6 +32,9 @@ class ProductPolicy
      */
     public function delete(User $user, Product $product): bool
     {
-        return $user->isAdmin() && ! SaleItem::query()->where('product_id', $product->getKey())->exists();
+        // Los listados precargan «sale_items_exists» (withExists) para no consultar una vez por fila.
+        $wasSold = $product->sale_items_exists ?? $product->saleItems()->exists();
+
+        return $user->isAdmin() && ! $wasSold;
     }
 }

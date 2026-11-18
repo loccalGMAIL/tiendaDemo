@@ -1,6 +1,21 @@
 # Changelog
 
-## 0.14.0 — Login con Google (Fase 12)
+## 0.15.0 (2026-11-18) — Revisión de calidad, sin funciones nuevas
+
+Requiere migración: no.
+
+- **Pruebas más rápidas y sin cortes**: `composer test` corre en paralelo y sin el límite de 300 s de composer (867 pruebas en 72 s con los módulos apagados y 83 s con todos encendidos, antes 100 a 285 s por pasada). `composer test:seq` las corre una por una para depurar.
+- **Consultas**: fuera de producción, cargar una relación «a demanda» ahora lanza una excepción (`preventLazyLoading`). Se corrigieron los N+1 que aparecieron: variantes y su producto, la grilla de stock y las listas de **clientes** y **productos** (la policy de borrar consultaba una vez por fila; ahora usa un dato precargado). Pruebas de presupuesto de consultas por pantalla y de que las listas no hacen más consultas con más filas.
+- **Seguridad**:
+  - Cabeceras en todas las respuestas (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`; HSTS solo por HTTPS).
+  - **Impresión de informes y de órdenes de compra: un usuario desactivado con la sesión abierta ya no puede imprimir** (antes solo se miraba el rol).
+  - Logos, favicon e imagen para compartir ya no aceptan **SVG** (podía llevar scripts y se sirve del disco público).
+  - El catálogo público limita las peticiones por IP (120 por minuto).
+  - **Matriz de autorización** como prueba: cada ruta propia contra invitado, vendedor, administrador, SuperAdmin y administrador inactivo; falla si aparece una ruta sin declarar. Pruebas de que un administrador no puede crear ni ascender a SuperAdmin.
+  - `composer audit` y `npm audit`: sin vulnerabilidades.
+- **Calidad estática**: Larastan sube al nivel 6 (0 errores).
+- **Recorrida en el navegador** con datos reales (ventas a cuenta, vencida y en cuotas, cobro, orden y factura de compra, informes e impresiones): sin errores de consola y con los números cuadrando a mano.
+## 0.14.0 (2026-11-18) — Login con Google (Fase 12)
 
 Requiere migración: no (`users.google_id` ya existía).
 
@@ -13,7 +28,7 @@ Requiere migración: no (`users.google_id` ya existía).
 - Nuevos: `GoogleLoginController` y la acción `FindUserForGoogleLogin`. README con el alta de las credenciales en Google Cloud Console.
 - Con esto están construidas todas las fases del plan base (0 a 12). Fuera de alcance: vincular o desvincular la cuenta de Google desde el perfil, forzar Google como único acceso, login con Google en la plataforma.
 
-## 0.13.0 — Cuotas propias (Fase 9)
+## 0.13.0 (2026-11-18) — Cuotas propias (Fase 9)
 
 Requiere migración: sí (tabla `financing_plans` y `sales.financing_surcharge` / `financing_surcharge_percent`; `financing_plan_id`, `installments_count` y `first_due_date` ya existían). Las tablas y columnas existen siempre; con el módulo apagado una venta a cuenta sigue teniendo un único vencimiento.
 
@@ -30,7 +45,7 @@ Requiere migración: sí (tabla `financing_plans` y `sales.financing_surcharge` 
 - Nuevos: `FinancingPlan`, `InstallmentSchedule` (servicio puro), `InstallmentsOverview`, `ProjectedIncomeChart`, `AdministratorChartWidget`. Invariante nueva: `total − cobrado en el acto + recargo = financiado`.
 - Pendiente fuera del plan: refinanciar o reprogramar cuotas, recargos por mora, planes por producto o cliente.
 
-## 0.12.0 — Cuenta corriente (Fase 8)
+## 0.12.0 (2026-11-18) — Cuenta corriente (Fase 8)
 
 Requiere migración: sí (`installments`, `installment_payment` y `account_movements`; las columnas de `sales` y `payments` ya existían). Las tablas existen siempre; con el módulo apagado todo sigue como antes (venta de contado) y no se pierde ningún dato.
 
@@ -46,7 +61,7 @@ Requiere migración: sí (`installments`, `installment_payment` y `account_movem
 - `Payment::scopeVisibleTo` suma los cobros que cargó el propio vendedor. La relación de un cobro con sus vencimientos se llama `imputedInstallments()` porque `payments.installments` ya es la cantidad de cuotas del medio de pago.
 - Pendiente: **Cuotas propias** (planes y varias cuotas), que se apoya en este módulo.
 
-## 0.11.0 — Informe de compras por proveedor
+## 0.11.0 (2026-11-18) — Informe de compras por proveedor
 
 Requiere migración: no.
 
@@ -56,7 +71,7 @@ Requiere migración: no.
 - Servicio `PurchasesReport`. El informe comparte pantalla, filtros y estilos con los de Ventas y Cobros.
 - Con esto los informes de Cuenta corriente (Saldos pendientes y Cobranza del mes) son los únicos que faltan: esperan a ese módulo.
 
-## 0.10.0 — Compras (Fase 10)
+## 0.10.0 (2026-11-17) — Compras (Fase 10)
 
 Requiere migración: sí (`suppliers`, `purchase_orders`, `purchase_order_items`, `purchases`, `purchase_items` y `products.supplier_id`). Las tablas existen siempre; con el módulo apagado no se muestra nada y no se pierde ningún dato.
 
@@ -73,7 +88,7 @@ Requiere migración: sí (`suppliers`, `purchase_orders`, `purchase_order_items`
 - Acciones `CreatePurchaseOrder`, `UpdatePurchaseOrder`, `IssuePurchaseOrder`, `CancelPurchaseOrder`, `CreatePurchase` y `CancelPurchase`; eventos `PurchaseCreated` y `PurchaseCancelled` (dentro de la transacción, como los de venta) que escucha Stock. Altas, emisiones y anulaciones quedan en la actividad.
 - Pendiente para una próxima versión: el informe «Compras por proveedor» (llegó en la 0.11.0) y las compras en la demostración.
 
-## 0.9.0 — Informes (Fase 11, parte núcleo)
+## 0.9.0 (2026-11-17) — Informes (Fase 11, parte núcleo)
 
 Requiere migración: no.
 
@@ -87,7 +102,7 @@ Requiere migración: no.
 - La tabla de los informes es simple (no se ordena ni se ocultan columnas, a diferencia de las listas del panel).
 - Pendiente: Saldos pendientes y Cobranza del mes (requieren Cuenta corriente) y Compras por proveedor (requiere Compras).
 
-## 0.8.4 — Modo de color de la landing
+## 0.8.4 (2026-11-17) — Modo de color de la landing
 
 Requiere migración: no.
 
@@ -96,7 +111,7 @@ Requiere migración: no.
 - **Logos según el modo** (tema Clásico): en claro usa solo el logo claro, aunque haya uno oscuro; en oscuro usa el logo para fondo oscuro (o el claro si no hay); en automático lleva los dos y el dispositivo elige.
 - `Appearance` suma `modeKey()`, `setMode()` y `MODES`.
 
-## 0.8.3 — Usuarios y actividad en la plataforma
+## 0.8.3 (2026-11-17) — Usuarios y actividad en la plataforma
 
 Requiere migración: no.
 
@@ -106,7 +121,7 @@ Requiere migración: no.
 - El formulario y las tablas de Usuarios y Actividad se reusan entre los dos paneles.
 - **Textos**: el acceso dice «Ingrese a su cuenta» y el inicio de los dos paneles se llama «Dashboard» (traducciones propias en `lang/vendor/filament-panels/es`).
 
-## 0.8.2 — Recorte automático de logos
+## 0.8.2 (2026-11-17) — Recorte automático de logos
 
 Requiere migración: no.
 
@@ -114,7 +129,7 @@ Requiere migración: no.
 - Es idempotente y reemplaza el archivo en el mismo lugar: para arreglar un logo ya subido alcanza con abrir Apariencia y guardar. Sin la extensión GD, o con un archivo que no es una imagen, no hace nada.
 - Nuevo servicio `ImageTrimmer`.
 
-## 0.8.1 — Portada y marca
+## 0.8.1 (2026-11-16) — Portada y marca
 
 Requiere migración: no.
 
@@ -124,7 +139,7 @@ Requiere migración: no.
 - **Portada del tema Clásico**: en lugar del recuadro de color, pasa las fotos de los productos destacados (hasta 8) con un fundido y un acercamiento suave, solo con CSS; cada foto muestra el nombre y enlaza a la ficha. Con una sola foto queda fija; si hay una imagen de portada cargada en Apariencia se muestra esa; respeta «reducir movimiento».
 - `public/build` recompilado.
 
-## 0.8.0 — Fase 7: instalación rápida
+## 0.8.0 (2026-11-16) — Fase 7: instalación rápida
 
 Requiere migración: no.
 
@@ -135,7 +150,7 @@ Requiere migración: no.
 - **`public/build` se versiona**: el servidor no compila.
 - **README de despliegue**: arquitectura, instalación local, variables, alta de un cliente, producción y actualización.
 
-## 0.7.0 — Fase 6: catálogo web
+## 0.7.0 (2026-11-16) — Fase 6: catálogo web
 
 Requiere migración: sí (`products` suma `slug`, `is_published`, `is_featured`, `show_price`, `images`; los productos existentes reciben su slug).
 
@@ -147,7 +162,7 @@ Requiere migración: sí (`products` suma `slug`, `is_published`, `is_featured`,
 - **Landing**: la sección Catálogo muestra las categorías con productos publicados (con enlace) y los destacados, más «Ver catálogo completo». El menú enlaza al catálogo aunque la sección de la landing esté oculta.
 - `LandingController` y `CatalogController` comparten el armado de datos del tema (`BuildsLandingData`).
 
-## 0.6.0 — Fase 5: sitio, apariencia y temas
+## 0.6.0 (2026-11-16) — Fase 5: sitio, apariencia y temas
 
 Requiere migración: sí (tabla `settings`). Requiere `php artisan storage:link` (lo hace `composer setup`) y `npm run build`.
 
@@ -159,7 +174,7 @@ Requiere migración: sí (tabla `settings`). Requiere `php artisan storage:link`
 - Los paneles toman el nombre, los logos, el favicon, el color principal y la tipografía de los títulos de la base, sin recompilar. Sin logo se muestra el nombre del negocio.
 - `Settings` (ajustes cacheados), `Appearance`, `SiteContent` y `Contrast` (servicios); `docs/temas.md`.
 
-## 0.5.0 — Fase 4: Stock y Variantes
+## 0.5.0 (2026-11-16) — Fase 4: Stock y Variantes
 
 Requiere migración: sí (`product_variants.stock` y `min_stock`; tabla `stock_movements`).
 
@@ -170,7 +185,7 @@ Requiere migración: sí (`product_variants.stock` y `min_stock`; tabla `stock_m
 - `LogsActivity` puede omitir registros y atributos que ya tienen historial propio (el stock no llena la actividad).
 - Trait `RelationManagerBelongsToModule` y bases `AdministratorPage`, `AdministratorStatsWidget` y `AdministratorTableWidget` para lo que solo ve el administrador. El test de arquitectura ahora recorre también los relation managers.
 
-## 0.4.0 — Fase 3: núcleo comercial
+## 0.4.0 (2026-11-16) — Fase 3: núcleo comercial
 
 Requiere migración: sí (`customers`, `categories`, `products`, `product_variants`, `payment_methods`, `sales`, `sale_items`, `payments`). `db:seed` carga los medios de pago iniciales.
 
@@ -185,7 +200,7 @@ Requiere migración: sí (`customers`, `categories`, `products`, `product_varian
 - Un usuario con ventas, cobros o anulaciones no se borra: se desactiva (cierra el pendiente de la Fase 1).
 - `PaymentMethodSeeder`: Efectivo −10 %, Transferencia, Débito, Tarjeta 1, 3 (+15 %) y 6 cuotas (+30 %).
 
-## 0.3.0 — Fase 2: módulos y panel superadmin
+## 0.3.0 (2026-11-16) — Fase 2: módulos y panel superadmin
 
 Requiere migración: sí (tabla `modules`).
 
@@ -197,7 +212,7 @@ Requiere migración: sí (tabla `modules`).
 - La suite corre con solo el núcleo y con todos los módulos encendidos (`composer test`, `TEST_MODULES=none|all`). Test de arquitectura: todo recurso, página y widget fuera del núcleo declara su módulo.
 - La versión en la barra superior tiene separación respecto del menú de usuario.
 
-## 0.2.0 — Fase 1: usuarios y base del panel
+## 0.2.0 (2026-11-16) — Fase 1: usuarios y base del panel
 
 Requiere migración: sí (`users` suma `role`, `active`, `is_default_seller`, `google_id`; tablas `activity_logs` y `table_column_preferences`).
 
@@ -209,7 +224,7 @@ Requiere migración: sí (`users` suma `role`, `active`, `is_default_seller`, `g
 - Botones de crear, editar, ver y borrar con solo ícono y tooltip; tablas compactas; versión visible en la barra superior y en el login; edición del propio perfil en ambos paneles.
 - `InitialUsersSeeder` (admin y superadmin desde `.env`), repetible sin duplicar ni pisar contraseñas.
 
-## 0.1.0 — Fase 0: preguntas y arranque
+## 0.1.0 (2026-11-16) — Fase 0: preguntas y arranque
 
 Requiere migración: sí (tablas base de Laravel: users, cache, jobs, sessions).
 
