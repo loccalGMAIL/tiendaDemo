@@ -98,6 +98,26 @@ class SaleInfolist
                             $record->installments()->open()->get()->map(fn (Installment $installment): string => $installment->balance())->all(),
                         ))
                         ->money('ARS', locale: 'es_AR'),
+                    // Cuotas propias: el plan con el que se vendió (copiado a la venta).
+                    TextEntry::make('financing')
+                        ->label('Plan de pago')
+                        ->state(fn (Sale $record): string => $record->installments_count.' cuotas'.(Money::compare((string) $record->financing_surcharge, '0') > 0
+                            ? ' · recargo '.Money::format((string) $record->financing_surcharge).' ('.rtrim(rtrim(number_format((float) $record->financing_surcharge_percent, 2, ',', ''), '0'), ',').' %)'
+                            : ''))
+                        ->visible(fn (Sale $record): bool => $record->installments_count !== null)
+                        ->columnSpanFull(),
+                    RepeatableEntry::make('installments')
+                        ->label('Cuotas')
+                        ->visible(fn (Sale $record): bool => $record->installments()->count() > 1)
+                        ->columns(5)
+                        ->columnSpanFull()
+                        ->schema([
+                            TextEntry::make('number')->label('N°'),
+                            TextEntry::make('due_date')->label('Vence')->date('d/m/Y'),
+                            TextEntry::make('amount')->label('Monto')->money('ARS', locale: 'es_AR'),
+                            TextEntry::make('paid_amount')->label('Pagado')->money('ARS', locale: 'es_AR'),
+                            TextEntry::make('status')->label('Estado')->badge(),
+                        ]),
                 ]),
             Section::make('Importes')
                 ->columns(3)

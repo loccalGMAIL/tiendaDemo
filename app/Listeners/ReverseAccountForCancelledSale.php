@@ -56,6 +56,11 @@ class ReverseAccountForCancelledSale
 
         $this->record->handle($sale->customer, AccountMovementType::Adjustment, '0.00', (string) $sale->total, "Anulación de venta {$sale->number()}", $sale, $event->actor);
 
+        // El recargo de financiación (Cuotas propias) también se acredita: la cuenta queda en cero.
+        if (Money::compare((string) $sale->financing_surcharge, '0') > 0) {
+            $this->record->handle($sale->customer, AccountMovementType::Adjustment, '0.00', (string) $sale->financing_surcharge, "Anulación del recargo de financiación de {$sale->number()}", $sale, $event->actor);
+        }
+
         if (Money::compare((string) $sale->down_payment, '0') > 0) {
             $this->record->handle($sale->customer, AccountMovementType::Adjustment, (string) $sale->down_payment, '0.00', "Anulación de lo cobrado en el acto de {$sale->number()}", $sale, $event->actor);
         }

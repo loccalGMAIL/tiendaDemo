@@ -8,9 +8,11 @@ use App\Facades\Modules;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Models\Customer;
+use App\Models\FinancingPlan;
 use App\Models\PaymentMethod;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\InstallmentSchedule;
 use App\Services\Money;
 use App\Services\SaleCalculator;
 use Filament\Forms\Components\DatePicker;
@@ -23,6 +25,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 
 class SaleForm
 {
@@ -183,12 +186,37 @@ class SaleForm
                         ->size('lg')
                         ->color('warning')
                         ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                    // Cuotas propias: un plan reparte el saldo en cuotas con su recargo.
+                    Select::make('financing_plan_id')
+                        ->label('Plan de pago')
+                        ->placeholder('Un solo vencimiento')
+                        ->options(fn (): array => FinancingPlan::query()
+                            ->where('active', true)
+                            ->orderBy('position')
+                            ->orderBy('id')
+                            ->get()
+                            ->mapWithKeys(fn (FinancingPlan $plan): array => [$plan->getKey() => $plan->label()])
+                            ->all())
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get) && self::onInstallments()),
+                    Select::make('first_month')
+                        ->label('Mes de la primera cuota')
+                        ->options(fn (Get $get): array => self::monthOptions($get))
+                        ->default(fn (): string => now()->addMonthNoOverflow()->format('Y-m'))
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (Get $get): bool => self::usesPlan($get) && self::dueRule() === InstallmentSchedule::RULE_FIXED_DAY)
+                        ->helperText(fn (): string => 'Vencen el día '.self::fixedDay().' de cada mes.'),
+                    Text::make(fn (Get $get): string => self::planPreview($get))
+                        ->extraAttributes(['style' => 'white-space: pre-line;'])
+                        ->visible(fn (Get $get): bool => self::usesPlan($get)),
                     DatePicker::make('due_date')
                         ->label('Vencimiento del saldo')
                         ->default(fn (): string => now()->addDays(30)->toDateString())
                         ->minDate(fn (Get $get): mixed => $get('date'))
-                        ->required(fn (Get $get): bool => self::leavesBalance($get))
-                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                        ->required(fn (Get $get): bool => self::leavesBalance($get) && ! self::usesPlan($get))
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get) && ! self::usesPlan($get)),
                     Text::make(fn (Get $get): string => self::balanceWarning($get) ?? '')
                         ->color('danger')
                         ->visible(fn (Get $get): bool => self::balanceWarning($get) !== null),
@@ -199,6 +227,96 @@ class SaleForm
     private static function onAccount(): bool
     {
         return Modules::enabled(Module::CurrentAccount);
+    }
+
+    private static function onInstallments(): bool
+    {
+        return Modules::enabled(Module::Installments);
+    }
+
+    /**
+     * Hay saldo y se eligió un plan de financiación (módulo Cuotas propias).
+     */
+    private static function usesPlan(Get $get): bool
+    {
+        return self::onInstallments() && self::leavesBalance($get) && filled($get('financing_plan_id'));
+    }
+
+    private static function dueRule(): string
+    {
+        return (string) Modules::setting(Module::Installments, 'due_rule', InstallmentSchedule::RULE_FIXED_DAY);
+    }
+
+    private static function fixedDay(): int
+    {
+        return (int) Modules::setting(Module::Installments, 'fixed_day', 10);
+    }
+
+    private static function saleDate(Get $get): Carbon
+    {
+        $date = $get('date');
+
+        try {
+            return filled($date) ? Carbon::parse($date)->startOfDay() : now()->startOfDay();
+        } catch (\Throwable) {
+            return now()->startOfDay();
+        }
+    }
+
+    /**
+     * Meses para la primera cuota: el de la venta y los 11 siguientes.
+     *
+     * @return array<string, string>
+     */
+    private static function monthOptions(Get $get): array
+    {
+        $start = self::saleDate($get)->startOfMonth();
+        $options = [];
+
+        foreach (range(0, 11) as $offset) {
+            $month = $start->copy()->addMonthsNoOverflow($offset);
+            $options[$month->format('Y-m')] = ucfirst($month->locale('es')->translatedFormat('F Y'));
+        }
+
+        return $options;
+    }
+
+    /**
+     * Vista previa en vivo con el mismo servicio que arma las cuotas de la venta real.
+     */
+    private static function planPreview(Get $get): string
+    {
+        $plan = FinancingPlan::query()->find($get('financing_plan_id'));
+
+        if ($plan === null) {
+            return '';
+        }
+
+        $schedule = new InstallmentSchedule;
+        $balance = self::calculation($get)['balance'];
+        $surcharge = $schedule->surcharge($balance, (string) $plan->surcharge_percent);
+        $financed = Money::add($balance, $surcharge);
+
+        $saleDate = self::saleDate($get);
+        $rule = self::dueRule();
+        $month = filled($get('first_month')) ? (string) $get('first_month') : null;
+        $first = $schedule->firstDueDate($saleDate, $rule, self::fixedDay(), $month);
+        $rows = $schedule->build($financed, $plan->installments_count, $first, $schedule->anchorDay($saleDate, $rule, self::fixedDay()), '0.00');
+
+        $lines = [
+            'A financiar: '.Money::format($balance).(Money::compare($surcharge, '0') > 0 ? ' + recargo '.Money::format($surcharge).' = '.Money::format($financed) : ''),
+            "{$plan->installments_count} cuotas:",
+        ];
+
+        foreach ($rows as $row) {
+            $lines[] = $row['number'].'. '.$row['due_date']->format('d/m/Y').' — '.Money::format($row['amount']);
+        }
+
+        if ($first->lt($saleDate)) {
+            $lines[] = 'Atención: la primera cuota vence antes de la venta; elegí otro mes.';
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
