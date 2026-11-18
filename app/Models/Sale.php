@@ -109,6 +109,16 @@ class Sale extends Model
     }
 
     /**
+     * Vencimientos del saldo (módulo Cuenta corriente).
+     *
+     * @return HasMany<Installment, $this>
+     */
+    public function installments(): HasMany
+    {
+        return $this->hasMany(Installment::class)->orderBy('number');
+    }
+
+    /**
      * @return HasMany<SaleItem, $this>
      */
     public function items(): HasMany

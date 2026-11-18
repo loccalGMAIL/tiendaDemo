@@ -33,6 +33,7 @@ class CreateSale extends CreateRecord
                 'seller_id' => $data['seller_id'] ?? null,
                 'customer_id' => $data['customer_id'] ?? null,
                 'date' => $data['date'] ?? null,
+                'due_date' => $data['due_date'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'items' => array_values(array_map(fn (array $item): array => [
                     'variant_id' => $item['variant_id'] ?? null,

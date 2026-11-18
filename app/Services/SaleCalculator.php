@@ -37,6 +37,8 @@ class SaleCalculator
 
     /**
      * Calcula subtotal, ajustes y total. Con un solo cobro sin base indicada, la base es el subtotal.
+     * `balance` es lo que queda sin cubrir (subtotal − suma de las bases, nunca negativo): con
+     * Cuenta corriente es el saldo a cuenta del cliente.
      *
      * @param  list<array{quantity: int, unit_price: string}>  $items
      * @param  list<array{adjustment_percent: string, base_amount?: string|null}>  $payments
@@ -45,7 +47,9 @@ class SaleCalculator
      *     adjustment: string,
      *     total: string,
      *     payments: list<array{base_amount: string, adjustment_amount: string, amount: string}>,
-     *     balanced: bool
+     *     balanced: bool,
+     *     balance: string,
+     *     overpaid: bool
      * }
      */
     public function calculate(array $items, array $payments): array
@@ -71,6 +75,8 @@ class SaleCalculator
         }
 
         $adjustmentTotal = Money::sum(array_column($lines, 'adjustment_amount'));
+        $covered = Money::sum(array_column($lines, 'base_amount'));
+        $difference = Money::sub($subtotal, $covered);
 
         return [
             'subtotal' => $subtotal,
@@ -78,7 +84,9 @@ class SaleCalculator
             'total' => Money::add($subtotal, $adjustmentTotal),
             'payments' => $lines,
             // La suma de las bases tiene que dar exactamente el subtotal.
-            'balanced' => $lines !== [] && Money::compare(Money::sum(array_column($lines, 'base_amount')), $subtotal) === 0,
+            'balanced' => $lines !== [] && Money::compare($covered, $subtotal) === 0,
+            'balance' => Money::isNegative($difference) ? '0.00' : $difference,
+            'overpaid' => Money::isNegative($difference),
         ];
     }
 }

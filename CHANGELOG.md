@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.12.0 — Cuenta corriente (Fase 8)
+
+Requiere migración: sí (`installments`, `installment_payment` y `account_movements`; las columnas de `sales` y `payments` ya existían). Las tablas existen siempre; con el módulo apagado todo sigue como antes (venta de contado) y no se pierde ningún dato.
+
+- **Ventas a cuenta**: con el módulo, una venta admite un **anticipo opcional** (los cobros de siempre, hasta el subtotal) y el resto queda **a cuenta del cliente**; también puede quedar entera a cuenta, sin cobros. Con saldo, el cliente y la fecha de vencimiento son obligatorios (no puede ser anterior a la venta). La venta nace «Con saldo» y se arma **un único vencimiento** por el saldo. Sin el módulo, toda venta es de contado, como hasta ahora.
+- **Cobros** (menú Ventas → Cobros; los registran el administrador y el vendedor): se imputan a los vencimientos del cliente **del más viejo al más nuevo**, o solo a los que se elijan; admiten pagos parciales y adelantados y **no pueden superar la deuda**. El recargo o descuento del medio de pago no cambia la deuda: la baja la base. La venta pasa a «Pagada» cuando se saldan todos sus vencimientos.
+- **Cuenta corriente del cliente**: historial inmutable con el saldo acumulado. Una venta con saldo deja un débito por el total y un crédito por lo cobrado en el acto; cada cobro, un crédito por su base. Una venta de contado no genera movimientos.
+- **Anular un cobro** (solo administrador, con motivo): devuelve lo imputado, reabre las ventas que se habían saldado y deja un débito de ajuste. El cobro hecho en el acto de una venta no se anula solo: se anula con la venta.
+- **Anular una venta con saldo**: no se puede si tiene cobros imputados (hay que anularlos antes). Anula sus vencimientos y deja ajustes que dejan la cuenta en cero.
+- **Ficha del cliente** (la ven el administrador y el vendedor): saldo y vencido en la cabecera, acción **Cobrar** y pestañas de **vencimientos**, **cuenta corriente** y **productos comprados**. Los clientes tienen ahora una vista; el vendedor, que no edita, entra por ahí.
+- **Escritorio** (administrador): total por cobrar, vencido, clientes con deuda y los vencimientos atrasados con acceso directo a cobrar. La vista de la venta suma su sección de cuenta corriente.
+- **Informes** (piden Informes y Cuenta corriente): **Saldos pendientes por cliente** (vencido, una columna por mes con selector de 6, 12, 18 o 24, más adelante y total) y **Cobranza del mes** (vencimientos del mes con teléfono, dirección, días de atraso y saldo; opcionalmente los atrasados). Con impresión. Los informes que no se filtran por Desde/Hasta ya no muestran esos campos (`ReportPage::usesPeriod()`).
+- **Demostración**: cinco ventas a cuenta (algunas ya vencidas), tres cobros de ejemplo (uno parcial, una venta saldada y uno anulado) y los saldos del libro. La demo sigue teniendo 25 ventas y no cambia sin el módulo.
+- `Payment::scopeVisibleTo` suma los cobros que cargó el propio vendedor. La relación de un cobro con sus vencimientos se llama `imputedInstallments()` porque `payments.installments` ya es la cantidad de cuotas del medio de pago.
+- Pendiente: **Cuotas propias** (planes y varias cuotas), que se apoya en este módulo.
+
 ## 0.11.0 — Informe de compras por proveedor
 
 Requiere migración: no.

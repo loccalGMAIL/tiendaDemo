@@ -7,19 +7,21 @@
 
     <x-filament::section>
         <div class="report-filters">
-            <div>
-                <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="report-from">Desde</label>
-                <x-filament::input.wrapper>
-                    <x-filament::input id="report-from" type="date" wire:model.live="from" />
-                </x-filament::input.wrapper>
-            </div>
+            @if ($this->usesPeriod())
+                <div>
+                    <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="report-from">Desde</label>
+                    <x-filament::input.wrapper>
+                        <x-filament::input id="report-from" type="date" wire:model.live="from" />
+                    </x-filament::input.wrapper>
+                </div>
 
-            <div>
-                <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="report-to">Hasta</label>
-                <x-filament::input.wrapper>
-                    <x-filament::input id="report-to" type="date" wire:model.live="to" />
-                </x-filament::input.wrapper>
-            </div>
+                <div>
+                    <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="report-to">Hasta</label>
+                    <x-filament::input.wrapper>
+                        <x-filament::input id="report-to" type="date" wire:model.live="to" />
+                    </x-filament::input.wrapper>
+                </div>
+            @endif
 
             @include($this->filtersView())
         </div>
@@ -34,7 +36,7 @@
         @endforeach
     </div>
 
-    <x-filament::section heading="Resultado" :description="'Del '.$this->periodLabel().' · Importes en pesos'">
+    <x-filament::section heading="Resultado" :description="$this->sectionDescription()">
         @include('reports._table', ['result' => $result])
     </x-filament::section>
 </x-filament-panels::page>

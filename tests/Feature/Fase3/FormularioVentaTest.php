@@ -116,6 +116,8 @@ it('un vendedor que manda otro precio no logra cambiarlo', function () {
 });
 
 it('muestra el aviso y no crea la venta si los cobros no suman el subtotal', function () {
+    // La regla de contado del núcleo: con Cuenta corriente cobrar de menos deja saldo a cuenta.
+    resetModules();
     $this->actingAs($this->admin);
 
     Livewire::test(CreateSale::class)
@@ -134,6 +136,8 @@ it('muestra el aviso y no crea la venta si los cobros no suman el subtotal', fun
 });
 
 it('exige al menos un producto y un medio de pago', function () {
+    // Con Cuenta corriente se puede vender sin cobrar nada (queda a cuenta): esta es la regla de contado.
+    resetModules();
     $this->actingAs($this->admin);
 
     Livewire::test(CreateSale::class)
@@ -170,6 +174,7 @@ it('el vendedor por defecto inactivo no se propone', function () {
 });
 
 it('el resumen en vivo muestra subtotal, recargo y total con el mismo cálculo de la venta', function () {
+    resetModules();
     $this->actingAs($this->admin);
 
     Livewire::test(CreateSale::class)
@@ -183,6 +188,7 @@ it('el resumen en vivo muestra subtotal, recargo y total con el mismo cálculo d
 });
 
 it('el resumen avisa cuando la suma de los montos no coincide con el subtotal', function () {
+    resetModules();
     $this->actingAs($this->admin);
 
     Livewire::test(CreateSale::class)
