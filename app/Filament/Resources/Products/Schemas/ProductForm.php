@@ -6,6 +6,7 @@ use App\Enums\Module;
 use App\Facades\Modules;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -106,6 +107,13 @@ class ProductForm
                 ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->searchable()
                 ->native(false),
+            // Módulo Compras: a quién se le compra habitualmente.
+            Select::make('supplier_id')
+                ->label('Proveedor habitual')
+                ->options(fn (): array => Supplier::query()->where('active', true)->orderBy('name')->pluck('name', 'id')->all())
+                ->searchable()
+                ->native(false)
+                ->visible(fn (): bool => Modules::enabled(Module::Purchases)),
             TextInput::make('price')
                 ->label('Precio de venta')
                 ->numeric()

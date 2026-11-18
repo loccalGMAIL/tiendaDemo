@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 #[Fillable([
-    'sku', 'slug', 'name', 'brand', 'description', 'category_id', 'price', 'cost', 'active',
+    'sku', 'slug', 'name', 'brand', 'description', 'category_id', 'supplier_id', 'price', 'cost', 'active',
     'is_published', 'is_featured', 'show_price', 'images',
 ])]
 class Product extends Model
@@ -96,6 +96,16 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Proveedor habitual (módulo Compras).
+     *
+     * @return BelongsTo<Supplier, $this>
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     /**

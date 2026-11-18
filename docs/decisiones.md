@@ -58,6 +58,17 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Compras)
+
+- **Todo es del administrador.** Proveedores, órdenes y facturas tienen policies solo para administrador: el vendedor no ve costos de compra.
+- **Operaciones como acciones** (`app/Actions/Purchases`), una por operación, con `DB::transaction` y `lockForUpdate`, y las reglas compartidas en el trait `GuardsPurchasing`. Las pantallas solo las llaman.
+- **El costo no se revierte al anular una factura.** El costo del producto queda como el de la última factura; si hay que corregirlo se edita el producto. Las ventas ya hechas no cambian porque copian su costo al vender.
+- **Stock por evento, no por llamada.** La factura dispara `PurchaseCreated` / `PurchaseCancelled` dentro de su transacción; el listener de Stock suma y resta. Anular revierte lo que esa factura sumó (sus movimientos), no lo que diga el módulo hoy, y se rechaza si dejaría la variante en negativo.
+- **Orden y factura**: una orden tiene a lo sumo una factura vigente. Anular la factura reabre la orden (emitida, con lo recibido en cero); una orden con factura vigente no se anula. Una línea en cero en la factura de una orden es lo que no llegó y no se guarda.
+- **Número de factura**: único por proveedor entre las facturas vigentes (no es una restricción de la base, porque una anulada libera el número).
+- **Sin ajustes propios** en Plataforma: el módulo no tiene configuración.
+- **Informe «Compras por proveedor»**: queda para otra versión. Pide dos módulos a la vez (Informes y Compras), lo que requiere un cambio chico en el corte por módulo.
+
 ## Decisiones de diseño (Informes)
 
 - **Ganancia = subtotal de ítems − costo.** El recargo o descuento de los medios de pago (`sales.adjustment`) se informa en su propia columna y no entra en la ganancia, como pide el plan base. El margen es la ganancia sobre el subtotal.
