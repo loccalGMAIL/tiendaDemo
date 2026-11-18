@@ -21,14 +21,26 @@ trait BelongsToModule
 {
     abstract protected static function module(): Module;
 
+    /**
+     * Otros módulos que también tienen que estar encendidos (por ejemplo, un informe de
+     * Compras, que además pide Informes). Se sobrescribe en la clase que lo necesita:
+     * no hace falta redefinir canAccess().
+     *
+     * @return list<Module>
+     */
+    protected static function alsoRequires(): array
+    {
+        return [];
+    }
+
     public static function canAccess(): bool
     {
-        return Modules::enabled(static::module()) && parent::canAccess();
+        return static::requiredModulesEnabled() && parent::canAccess();
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return Modules::enabled(static::module()) && parent::shouldRegisterNavigation();
+        return static::requiredModulesEnabled() && parent::shouldRegisterNavigation();
     }
 
     /**
@@ -38,7 +50,21 @@ trait BelongsToModule
     {
         return [
             ...Arr::wrap(parent::getRouteMiddleware($panel)),
-            'module:'.static::module()->value,
+            ...array_map(
+                fn (Module $module): string => 'module:'.$module->value,
+                [static::module(), ...static::alsoRequires()],
+            ),
         ];
+    }
+
+    protected static function requiredModulesEnabled(): bool
+    {
+        foreach ([static::module(), ...static::alsoRequires()] as $module) {
+            if (! Modules::enabled($module)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
