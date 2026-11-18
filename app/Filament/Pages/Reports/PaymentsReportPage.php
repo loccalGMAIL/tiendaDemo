@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Reports;
 
 use App\Models\PaymentMethod;
+use App\Services\Money;
 use App\Services\Reports\PaymentsReport;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -42,6 +43,18 @@ class PaymentsReportPage extends ReportPage
     public function result(): array
     {
         return app(PaymentsReport::class)->run($this->filters());
+    }
+
+    public function summary(array $result): array
+    {
+        $totals = $result['totals'];
+
+        return [
+            ['label' => 'Cobrado', 'value' => Money::format($totals['amount'])],
+            ['label' => 'Base', 'value' => Money::format($totals['base'])],
+            ['label' => 'Ajustes', 'value' => Money::format($totals['adjustment'])],
+            ['label' => 'Cobros', 'value' => (string) count($result['rows'])],
+        ];
     }
 
     /**

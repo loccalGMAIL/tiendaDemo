@@ -6,6 +6,9 @@ use App\Enums\Module;
 use App\Filament\Concerns\BelongsToModule;
 use App\Filament\Pages\AdministratorPage;
 use App\Models\User;
+use App\Services\Reports\Report;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 
 /**
@@ -52,6 +55,36 @@ abstract class ReportPage extends AdministratorPage
      * @return array<string, mixed>
      */
     abstract public function filters(): array;
+
+    /**
+     * Indicadores de arriba (etiqueta y valor ya formateado), calculados del resultado.
+     *
+     * @param  array<string, mixed>  $result
+     * @return list<array{label: string, value: string}>
+     */
+    abstract public function summary(array $result): array;
+
+    /**
+     * @return array<int, Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('print')
+                ->label('Imprimir')
+                ->icon(Heroicon::OutlinedPrinter)
+                ->color('gray')
+                ->url(fn (): string => $this->printUrl())
+                ->openUrlInNewTab(),
+        ];
+    }
+
+    public function periodLabel(): string
+    {
+        [$from, $to] = Report::period(['from' => $this->from, 'to' => $this->to]);
+
+        return $from->format('d/m/Y').' al '.$to->format('d/m/Y');
+    }
 
     public function mount(): void
     {

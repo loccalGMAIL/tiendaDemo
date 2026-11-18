@@ -10,6 +10,7 @@ Requiere migración: no.
 - **La ganancia no incluye el recargo ni el descuento del medio de pago**: es el subtotal de los ítems menos su costo. El ajuste se muestra aparte.
 - **Versión imprimible** de cada informe en otra pestaña (`/informes/{ventas|cobros}/imprimir`, HTML con estilos de impresión, sin librería de PDF), con los mismos filtros que la pantalla. El vendedor recibe 403; con el módulo apagado, 404.
 - Servicios `SalesReport` y `PaymentsReport` (`app/Services/Reports`): pantalla e impresión salen del mismo resultado, y los totales coinciden con los del escritorio.
+- **Distribución**: filtros en una fila, indicadores resumen arriba (ventas, costo, ganancia y margen; cobrado, base, ajustes y cobros), botón «Imprimir» en el encabezado y tablas compactas que no parten el texto, con los importes en pesos sin repetir el símbolo en cada celda. Los subtotales de cobros van lado a lado.
 - La tabla de los informes es simple (no se ordena ni se ocultan columnas, a diferencia de las listas del panel).
 - Pendiente: Saldos pendientes y Cobranza del mes (requieren Cuenta corriente) y Compras por proveedor (requiere Compras).
 

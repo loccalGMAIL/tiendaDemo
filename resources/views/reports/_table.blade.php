@@ -1,9 +1,7 @@
 @php
-    use App\Services\Money;
-
     $format = function (string $kind, ?string $value): string {
         return match ($kind) {
-            'money' => Money::format((string) $value),
+            'money' => number_format((float) $value, 2, ',', '.'),
             'percent' => number_format((float) $value, 2, ',', '.').' %',
             default => (string) $value,
         };
@@ -42,7 +40,11 @@
     </table>
 </div>
 
+@if (! empty($result['subtotals']))
+<div class="report-subtotals">
+@endif
 @foreach ($result['subtotals'] ?? [] as $heading => $subtotals)
+    <div>
     <h3 class="report-subtitle">{{ $heading }}</h3>
     <div class="report-scroll">
         <table class="report-table">
@@ -68,4 +70,8 @@
             </tbody>
         </table>
     </div>
+    </div>
 @endforeach
+@if (! empty($result['subtotals']))
+</div>
+@endif

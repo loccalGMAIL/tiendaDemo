@@ -26,7 +26,7 @@
 
     <header>
         <h1>{{ $title }}</h1>
-        <p>{{ $business }} · Período: {{ $period }}</p>
+        <p>{{ $business }} · Período: {{ $period }} · Importes en pesos</p>
         <p>Impreso el {{ $printedAt }}</p>
     </header>
 

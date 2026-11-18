@@ -18,10 +18,10 @@ abstract class Report
      * @param  array<string, mixed>  $filters
      * @return array{0: Carbon, 1: Carbon}
      */
-    public function period(array $filters): array
+    public static function period(array $filters): array
     {
-        $from = $this->date($filters['from'] ?? null) ?? now()->startOfMonth();
-        $to = $this->date($filters['to'] ?? null) ?? now()->endOfMonth();
+        $from = self::date($filters['from'] ?? null) ?? now()->startOfMonth();
+        $to = self::date($filters['to'] ?? null) ?? now()->endOfMonth();
 
         return $from->greaterThan($to) ? [$to->startOfDay(), $from->startOfDay()] : [$from->startOfDay(), $to->startOfDay()];
     }
@@ -43,7 +43,7 @@ abstract class Report
         return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
     }
 
-    private function date(mixed $value): ?Carbon
+    private static function date(mixed $value): ?Carbon
     {
         if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return null;

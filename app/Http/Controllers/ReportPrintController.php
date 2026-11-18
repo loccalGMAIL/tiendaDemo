@@ -39,7 +39,7 @@ class ReportPrintController extends Controller
         $service = app($definition['service']);
         $filters = $request->query();
 
-        [$from, $to] = $service->period($filters);
+        [$from, $to] = $service::period($filters);
 
         return view('reports.print', [
             'business' => app(SiteContent::class)->name(),

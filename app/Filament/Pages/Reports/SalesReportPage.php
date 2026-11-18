@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Reports;
 
+use App\Services\Money;
 use App\Services\Reports\SalesReport;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
@@ -40,5 +41,17 @@ class SalesReportPage extends ReportPage
     public function result(): array
     {
         return app(SalesReport::class)->run($this->filters());
+    }
+
+    public function summary(array $result): array
+    {
+        $totals = $result['totals'];
+
+        return [
+            ['label' => 'Ventas', 'value' => Money::format($totals['total'] ?? $totals['subtotal'])],
+            ['label' => 'Costo', 'value' => Money::format($totals['cost'])],
+            ['label' => 'Ganancia', 'value' => Money::format($totals['profit'])],
+            ['label' => 'Margen', 'value' => number_format((float) $totals['margin'], 2, ',', '.').' %'],
+        ];
     }
 }
