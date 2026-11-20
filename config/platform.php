@@ -6,7 +6,7 @@ return [
     | Versión semántica de la plataforma. Debe coincidir con CHANGELOG.md y el
     | tag de git.
     */
-    'version' => '0.12.0',
+    'version' => '0.11.0',
 
     /*
     | Contraseña de los usuarios de demostración (DemoSeeder). Solo para entornos de prueba.
