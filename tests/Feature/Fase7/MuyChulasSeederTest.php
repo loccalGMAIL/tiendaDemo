@@ -96,11 +96,11 @@ it('si ya hay productos no agrega nada', function () {
     expect(Product::count())->toBe(1)->and(Category::where('name', 'Bikinis')->exists())->toBeFalse();
 });
 
-it('en producción se niega sin tocar la base', function () {
+it('en producción carga los productos', function () {
     Modules::enableAll();
     $this->app['env'] = 'production';
 
     app(MuyChulasSeeder::class)->run();
 
-    expect(Product::count())->toBe(0);
+    expect(Product::count())->toBeGreaterThan(0);
 });

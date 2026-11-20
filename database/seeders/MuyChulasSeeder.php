@@ -19,14 +19,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Prueba para un posible cliente: Muy Chulas (indumentaria, Concepción del Uruguay).
+ * Carga inicial de Muy Chulas (indumentaria, Concepción del Uruguay).
  *
  * Los datos del negocio, los productos, los precios, los talles y las fotos salen de
  * su Instagram público (@muy_chulas_ok). El costo no se conoce y queda en cero; no se
  * cargan ventas ni clientes. Usa las acciones reales y solo arma lo de los módulos
  * encendidos, así que corre después de `modules:enable`.
  *
- * No corre en producción ni si la instalación ya tiene productos.
+ * No corre si la instalación ya tiene productos.
  */
 class MuyChulasSeeder extends Seeder
 {
@@ -44,14 +44,8 @@ class MuyChulasSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->isProduction()) {
-            $this->command?->error('La prueba de Muy Chulas no se carga en producción.');
-
-            return;
-        }
-
         if (Product::query()->exists()) {
-            $this->command?->info('Ya hay productos cargados: no se agrega la prueba de Muy Chulas para no pisar datos en uso.');
+            $this->command?->info('Ya hay productos cargados: no se agrega la carga inicial de Muy Chulas para no pisar datos en uso.');
 
             return;
         }
