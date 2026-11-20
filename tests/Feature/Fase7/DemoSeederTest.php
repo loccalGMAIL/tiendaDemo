@@ -1,14 +1,19 @@
 <?php
 
 use App\Enums\ActivityEvent;
+use App\Enums\InstallmentStatus;
 use App\Enums\Module;
 use App\Enums\Role;
+use App\Enums\SaleStatus;
 use App\Facades\Modules;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Sales\Pages\ListSales;
+use App\Models\AccountMovement;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\FinancingPlan;
+use App\Models\Installment;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Product;
@@ -73,11 +78,13 @@ it('arma una demostración completa con las acciones reales', function () {
         ->and(Sale::where('status', 'cancelled')->count())->toBe(2)
         ->and(ProductVariant::where('name', '!=', '')->count())->toBeGreaterThan(20);
 
-    // Los totales cuadran: lo cobrado de cada venta vigente es su total.
+    // Los totales cuadran: lo cobrado en el acto de cada venta es su `down_payment`, y lo que
+    // queda a cuenta (Cuenta corriente) es el resto del total más el recargo de financiación.
     foreach (Sale::with(['items', 'payments'])->get() as $sale) {
         $paid = Money::sum($sale->payments->pluck('amount')->all());
 
-        expect($paid)->toBe($sale->total)
+        expect($paid)->toBe($sale->down_payment)
+            ->and(Money::sub(Money::add($sale->total, $sale->financing_surcharge), $sale->financed_amount))->toBe($sale->down_payment)
             ->and(Money::sum($sale->items->pluck('subtotal')->all()))->toBe($sale->subtotal)
             ->and($sale->total_cost)->not->toBe('0.00');
     }
@@ -123,7 +130,83 @@ it('las ventas de la demostración quedan en la actividad con su autor', functio
     runDemo();
 
     expect(ActivityLog::where('event', ActivityEvent::Created)->where('subject_type', (new Sale)->getMorphClass())->count())->toBe(25)
-        ->and(ActivityLog::where('event', ActivityEvent::Cancelled)->count())->toBe(2);
+        ->and(ActivityLog::where('event', ActivityEvent::Cancelled)->where('subject_type', (new Sale)->getMorphClass())->count())->toBe(2);
+});
+
+// --- Cuenta corriente ---------------------------------------------------------
+
+it('con Cuenta corriente la demostración deja ventas a cuenta, vencidos y cobros de ejemplo', function () {
+    Modules::enableAll();
+    runDemo();
+
+    // Cinco ventas dejan saldo (dos en las cuotas de un plan: 3 + 6 y las otras tres con un solo
+    // vencimiento); algunas ya vencieron y quedan con deuda abierta.
+    expect(Sale::count())->toBe(25)
+        ->and(Sale::where('financed_amount', '>', 0)->count())->toBe(5)
+        ->and(Installment::count())->toBe(12)
+        ->and(Installment::query()->overdue()->count())->toBeGreaterThanOrEqual(1)
+        ->and(Sale::where('status', SaleStatus::Active->value)->count())->toBeGreaterThanOrEqual(2);
+
+    // Tres cobros a cuenta, uno anulado por error de carga, y una venta que se saldó con cobros.
+    expect(Payment::onAccount()->count())->toBe(3)
+        ->and(Payment::onAccount()->whereNotNull('cancelled_at')->count())->toBe(1)
+        ->and(Installment::where('status', InstallmentStatus::Paid->value)->count())->toBeGreaterThanOrEqual(1)
+        ->and(Sale::where('status', SaleStatus::Paid->value)->whereHas('installments')->count())->toBeGreaterThanOrEqual(1);
+
+    // El saldo del libro de cada cliente coincide con lo que debe por sus vencimientos.
+    foreach (Customer::all() as $customer) {
+        $ledger = (string) (AccountMovement::where('customer_id', $customer->id)->orderByDesc('id')->value('balance') ?? '0.00');
+
+        expect($ledger)->toBe($customer->accountBalance());
+    }
+});
+
+it('con Cuotas propias la demostración suma dos planes y dos ventas en cuotas con recargo', function () {
+    Modules::enableAll();
+    runDemo();
+
+    expect(FinancingPlan::query()->orderBy('position')->pluck('installments_count', 'name')->all())->toBe(['3 cuotas' => 3, '6 cuotas' => 6])
+        ->and(Sale::whereNotNull('financing_plan_id')->count())->toBe(2)
+        ->and(Sale::where('installments_count', 6)->firstOrFail()->financing_surcharge_percent)->toBe('12.00')
+        ->and((float) Sale::sum('financing_surcharge'))->toBeGreaterThan(0.0);
+
+    // Lo financiado de cada venta con saldo es lo que queda a cuenta más su recargo, y se reparte exacto.
+    foreach (Sale::where('financed_amount', '>', 0)->get() as $sale) {
+        expect(Money::add(Money::sub($sale->total, $sale->down_payment), $sale->financing_surcharge))->toBe($sale->financed_amount)
+            ->and(Money::sum($sale->installments()->pluck('amount')->all()))->toBe($sale->financed_amount);
+    }
+});
+
+it('con Cuenta corriente y sin Cuotas propias la demostración deja un único vencimiento por venta', function () {
+    enableOnly(Module::CurrentAccount);
+    runDemo();
+
+    expect(Installment::count())->toBe(5)
+        ->and(FinancingPlan::count())->toBe(0)
+        ->and(Sale::whereNotNull('financing_plan_id')->count())->toBe(0);
+});
+
+it('la demostración con Cuenta corriente aparece en las pantallas y en el escritorio', function () {
+    Modules::enableAll();
+    runDemo();
+
+    $admin = User::where('role', Role::Admin->value)->firstOrFail();
+    $panel = 'http://'.config('domains.panel');
+
+    $this->actingAs($admin)->get($panel.'/payments')->assertOk();
+    $this->get($panel.'/customers/'.Customer::firstOrFail()->id)->assertOk()->assertSee('Saldo a cobrar');
+    $this->get($panel.'/')->assertOk()->assertSee('Total por cobrar');
+});
+
+it('sin Cuenta corriente la demostración sigue siendo de contado', function () {
+    enableOnly(Module::Stock);
+    runDemo();
+
+    expect(Sale::count())->toBe(25)
+        ->and(Installment::count())->toBe(0)
+        ->and(AccountMovement::count())->toBe(0)
+        ->and(Payment::onAccount()->count())->toBe(0)
+        ->and(Sale::where('status', SaleStatus::Active->value)->count())->toBe(0);
 });
 
 it('el catálogo de la demostración tiene publicados, destacados, precio oculto, borrador e imágenes', function () {

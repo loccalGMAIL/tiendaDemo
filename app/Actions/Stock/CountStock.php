@@ -50,7 +50,7 @@ class CountStock
 
         return DB::transaction(function () use ($ids, $counts, $minimums, $reason, $actor): array {
             // Se bloquean siempre en el mismo orden (por id).
-            $variants = ProductVariant::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $variants = ProductVariant::query()->with('product')->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
 
             $adjustments = 0;
             $changedMinimums = 0;

@@ -4,16 +4,19 @@ namespace App\Filament\Resources\Customers\Tables;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CustomersTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withExists('sales'))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
@@ -45,6 +48,8 @@ class CustomersTable
                 TernaryFilter::make('active')->label('Activo'),
             ])
             ->recordActions([
+                // La ficha del cliente: la ven también los vendedores, que no editan.
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ]);

@@ -3,15 +3,19 @@
 namespace App\Actions\Sales;
 
 use App\Enums\ActivityEvent;
+use App\Enums\Module;
 use App\Enums\SaleStatus;
 use App\Events\SaleCreated;
+use App\Facades\Modules;
 use App\Models\Customer;
+use App\Models\FinancingPlan;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\InstallmentSchedule;
 use App\Services\Money;
 use App\Services\SaleCalculator;
 use Illuminate\Support\Carbon;
@@ -19,14 +23,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Confirma una venta de contado: ítems con precio y costo copiados, cobros
- * con el recargo o descuento de su medio de pago, y la venta nace pagada.
+ * Confirma una venta: ítems con precio y costo copiados, cobros con el recargo o
+ * descuento de su medio de pago, y la venta nace pagada. Con el módulo Cuenta
+ * corriente, lo que no se cobra en el acto queda a cuenta del cliente (la venta nace
+ * con saldo y el módulo arma su vencimiento al escuchar el evento).
  */
 class CreateSale
 {
     public function __construct(
         private SaleCalculator $calculator,
         private ActivityLogger $logger,
+        private InstallmentSchedule $schedule,
     ) {}
 
     /**
@@ -34,6 +41,9 @@ class CreateSale
      *     seller_id?: int|string|null,
      *     customer_id?: int|string|null,
      *     date?: string|null,
+     *     due_date?: string|null,
+     *     financing_plan_id?: int|string|null,
+     *     first_month?: string|null,
      *     notes?: string|null,
      *     items?: array<int, array{variant_id?: int|string|null, quantity?: int|string|null, unit_price?: string|int|float|null}>,
      *     payments?: array<int, array{payment_method_id?: int|string|null, base_amount?: string|int|float|null}>
@@ -64,17 +74,15 @@ class CreateSale
             ], $payments),
         );
 
-        if (! $calculation['balanced']) {
-            $paid = Money::sum(array_column($calculation['payments'], 'base_amount'));
-
-            throw ValidationException::withMessages([
-                'payments' => "La suma de los cobros ({$paid}) no coincide con el subtotal ({$calculation['subtotal']}).",
-            ]);
-        }
-
         $date = isset($data['date']) && filled($data['date'])
             ? Carbon::parse($data['date'])->toDateString()
             : now()->toDateString();
+
+        // Con Cuenta corriente lo que no se cobra en el acto queda a cuenta del cliente (con
+        // Cuotas propias, en las cuotas de un plan); sin el módulo toda venta es de contado y
+        // los cobros suman exactamente el subtotal.
+        $financing = $this->resolveFinancing($calculation, $customer, $data, $date);
+        $hasBalance = Money::compare($financing['financed'], '0') > 0;
 
         $sale = new Sale([
             'customer_id' => $customer?->getKey(),
@@ -87,10 +95,17 @@ class CreateSale
                 fn (array $item): string => Money::mul($item['unit_cost'], $item['quantity']),
                 $items,
             )),
-            // Sin Cuenta corriente toda venta es de contado: se cobra todo en el acto.
-            'down_payment' => $calculation['total'],
-            'financed_amount' => '0.00',
-            'status' => SaleStatus::Paid,
+            // Lo cobrado en el acto (base + ajuste de cada medio); lo que queda a cuenta es
+            // `balance` más el recargo de financiación (total − down_payment + recargo = financed).
+            'down_payment' => Money::sub($calculation['total'], $calculation['balance']),
+            'financed_amount' => $financing['financed'],
+            // Se copian del plan: cambiarlo después no afecta la venta.
+            'financing_plan_id' => $financing['plan']?->getKey(),
+            'installments_count' => $financing['plan']?->installments_count,
+            'financing_surcharge' => $financing['surcharge'],
+            'financing_surcharge_percent' => $financing['percent'],
+            'first_due_date' => $financing['first_due'],
+            'status' => $hasBalance ? SaleStatus::Active : SaleStatus::Paid,
             'notes' => $data['notes'] ?? null,
         ]);
         $sale->save();
@@ -139,6 +154,132 @@ class CreateSale
         SaleCreated::dispatch($sale, $actor);
 
         return $sale;
+    }
+
+    /**
+     * Lo que queda a cuenta del cliente (cero en una venta de contado). Con Cuenta corriente
+     * los cobros pueden cubrir menos que el subtotal; el saldo exige cliente y, o un vencimiento,
+     * o (con Cuotas propias) un plan de financiación que lo reparte en cuotas con su recargo.
+     *
+     * @param  array{subtotal: string, balance: string, balanced: bool, overpaid: bool, payments: list<array{base_amount: string}>}  $calculation
+     * @param  array<string, mixed>  $data
+     * @return array{financed: string, surcharge: string, percent: string, plan: ?FinancingPlan, first_due: ?string}
+     *
+     * @throws ValidationException
+     */
+    private function resolveFinancing(array $calculation, ?Customer $customer, array $data, string $date): array
+    {
+        $none = ['financed' => '0.00', 'surcharge' => '0.00', 'percent' => '0.00', 'plan' => null, 'first_due' => null];
+        $paid = Money::sum(array_column($calculation['payments'], 'base_amount'));
+
+        if (! Modules::enabled(Module::CurrentAccount)) {
+            if (! $calculation['balanced']) {
+                throw ValidationException::withMessages([
+                    'payments' => "La suma de los cobros ({$paid}) no coincide con el subtotal ({$calculation['subtotal']}).",
+                ]);
+            }
+
+            return $none;
+        }
+
+        if ($calculation['overpaid']) {
+            throw ValidationException::withMessages([
+                'payments' => "La suma de los cobros ({$paid}) supera el subtotal ({$calculation['subtotal']}).",
+            ]);
+        }
+
+        if (Money::compare($calculation['balance'], '0') === 0) {
+            return $none;
+        }
+
+        if ($customer === null) {
+            throw ValidationException::withMessages(['customer_id' => 'Una venta con saldo a cuenta necesita un cliente.']);
+        }
+
+        $plan = $this->resolvePlan($data);
+
+        if ($plan !== null) {
+            return $this->planFinancing($plan, $calculation['balance'], $data, $date);
+        }
+
+        if (blank($data['due_date'] ?? null)) {
+            throw ValidationException::withMessages(['due_date' => 'Indicá el vencimiento del saldo.']);
+        }
+
+        try {
+            $due = Carbon::parse($data['due_date'])->toDateString();
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['due_date' => 'El vencimiento no es una fecha válida.']);
+        }
+
+        if ($due < $date) {
+            throw ValidationException::withMessages(['due_date' => 'El vencimiento no puede ser anterior a la fecha de la venta.']);
+        }
+
+        return ['financed' => $calculation['balance'], 'surcharge' => '0.00', 'percent' => '0.00', 'plan' => null, 'first_due' => $due];
+    }
+
+    /**
+     * El plan de financiación pedido (solo con el módulo Cuotas propias; sin él se ignora).
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    private function resolvePlan(array $data): ?FinancingPlan
+    {
+        if (! Modules::enabled(Module::Installments) || blank($data['financing_plan_id'] ?? null)) {
+            return null;
+        }
+
+        $plan = FinancingPlan::query()->find($data['financing_plan_id']);
+
+        if ($plan === null || ! $plan->active) {
+            throw ValidationException::withMessages(['financing_plan_id' => 'El plan de pago elegido no es válido.']);
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Recargo del plan y fecha de la primera cuota según la regla de vencimiento del módulo.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{financed: string, surcharge: string, percent: string, plan: FinancingPlan, first_due: string}
+     *
+     * @throws ValidationException
+     */
+    private function planFinancing(FinancingPlan $plan, string $balance, array $data, string $date): array
+    {
+        $rule = (string) Modules::setting(Module::Installments, 'due_rule', InstallmentSchedule::RULE_FIXED_DAY);
+        $fixedDay = (int) Modules::setting(Module::Installments, 'fixed_day', 10);
+        $month = filled($data['first_month'] ?? null) ? (string) $data['first_month'] : null;
+
+        if ($rule === InstallmentSchedule::RULE_FIXED_DAY && $month !== null) {
+            if (! $this->schedule->validMonth($month)) {
+                throw ValidationException::withMessages(['first_month' => 'El mes de la primera cuota no es válido.']);
+            }
+
+            if ($month < substr($date, 0, 7)) {
+                throw ValidationException::withMessages(['first_month' => 'La primera cuota no puede ser de un mes anterior a la venta.']);
+            }
+        }
+
+        $first = $this->schedule->firstDueDate(Carbon::parse($date), $rule, $fixedDay, $month);
+
+        if ($first->toDateString() < $date) {
+            throw ValidationException::withMessages(['first_month' => 'La primera cuota no puede vencer antes de la fecha de la venta.']);
+        }
+
+        $surcharge = $this->schedule->surcharge($balance, (string) $plan->surcharge_percent);
+
+        return [
+            'financed' => Money::add($balance, $surcharge),
+            'surcharge' => $surcharge,
+            'percent' => (string) $plan->surcharge_percent,
+            'plan' => $plan,
+            'first_due' => $first->toDateString(),
+        ];
     }
 
     /**
@@ -287,7 +428,12 @@ class CreateSale
     {
         $rawPayments = array_values($data['payments'] ?? []);
 
+        // Con Cuenta corriente la venta puede quedar entera a cuenta (sin cobros).
         if ($rawPayments === []) {
+            if (Modules::enabled(Module::CurrentAccount)) {
+                return [];
+            }
+
             throw ValidationException::withMessages(['payments' => 'Indicá al menos un medio de pago.']);
         }
 

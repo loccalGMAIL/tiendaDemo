@@ -58,6 +58,42 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Categorías en la web:** solo las activas que tienen productos publicados.
 - **El menú enlaza al catálogo** mientras haya productos publicados, aunque el administrador oculte la sección Catálogo de la landing.
 
+## Decisiones de diseño (Login con Google)
+
+- **No registra usuarios**: el administrador del cliente da de alta a las personas; Google solo es otra forma de entrar. Entra un usuario existente, activo, administrador o vendedor (`User::canAccessPanel(admin)`).
+- **Vinculación más estricta que el plan base**: por correo solo si Google lo informa como verificado (`email_verified`); una cuenta ya vinculada a otro `google_id` no se pisa. Después de vinculada manda el `google_id`, aunque el correo cambie.
+- **Un solo mensaje para todo rechazo** (el de las credenciales incorrectas): no se distingue inexistente, inactivo, SuperAdmin, sin verificar o cuenta ajena. El SuperAdmin tampoco puede entrar por Google al panel del negocio, y el panel `superadmin` no lleva el botón.
+- **Lógica en una acción** (`FindUserForGoogleLogin`) y no en el controlador; el controlador solo habla con Socialite, inicia la sesión (`Auth::login` dispara el evento que ya registra el ingreso) y registra el fallo.
+- **El fallo se atribuye al usuario si existe**, igual que `LogFailedLogin`: un intento sobre un SuperAdmin queda fuera de la actividad que ve el cliente.
+- **La URI de redirección** sale de `GOOGLE_REDIRECT_URI` o, si está vacía, de la ruta del callback; se fija antes de crear el proveedor porque tiene que ser la misma al redirigir y al canjear el código. Se agrega `prompt=select_account` a la URL de Google para que siempre pida elegir la cuenta.
+- **El botón es un render hook** del panel del negocio (`AUTH_LOGIN_FORM_AFTER`): la vista devuelve vacío con el módulo apagado, así que no hay ni rastro. Estilos propios en línea (no dependen de compilar).
+
+## Decisiones de diseño (Cuotas propias)
+
+- **El recargo de financiación va aparte del total de la venta.** `sales.total` sigue siendo subtotal + ajustes de los medios de pago; el recargo se guarda en `financing_surcharge` (con su porcentaje) y se asienta como un débito propio en la cuenta del cliente. Ventas y ganancia no cambia: el interés se ve en la cuenta, en los vencimientos y en la ganancia futura. Invariante: `total − down_payment + financing_surcharge = financed_amount`.
+- **Los planes los administra el administrador del cliente** (Configuración, como los medios de pago); la regla de vencimiento (día fijo o mismo día) sigue siendo un ajuste del SuperAdmin.
+- **Un servicio puro** (`InstallmentSchedule`) arma el cronograma y lo usan la venta real, el listener de Cuenta corriente y la vista previa del formulario: los números coinciden por construcción. La cuota se redondea hacia abajo (`bcdiv` a 2 decimales) y la última absorbe la diferencia; lo mismo con la porción de costo.
+- **La primera cuota vence justo en la fecha calculada** y las demás en el día de anclaje de su mes (el fijo, o el día de la venta), siempre desde el mes de la primera, así 31/1 → 28/2 → 31/3. Con día fijo el ajuste admite hasta el 28, por eso nunca se acorta.
+- **La porción de costo de lo financiado** es `total_cost × base ÷ subtotal` (la base es lo que queda a cuenta sin recargo), repartida en proporción a las cuotas. El plan base dice «costo × cuota ÷ total»; con recargo esa fórmula superaría el costo, así que se reparte sobre la base. La **ganancia futura** de una cuota es su saldo menos la parte de costo proporcional a lo que falta cobrar: incluye el interés.
+- **La venta copia el plan** (`financing_plan_id`, `installments_count`, recargo y su porcentaje); no hay clave foránea (la columna ya existía) y el plan puede cambiar o desactivarse sin tocar lo vendido.
+- **Sin el módulo o sin elegir plan, el saldo es un único vencimiento** con la fecha indicada. Con el módulo apagado, un plan que llegue se ignora; el vencimiento sigue siendo obligatorio.
+- **Gráfico**: ingresos proyectados a 12 meses por mes de vencimiento (por cobrar y ganancia). Lo ya vencido se suma al mes actual para que no desaparezca de la proyección. Solo para el administrador, porque muestra ganancias.
+
+## Decisiones de diseño (Cuenta corriente)
+
+- **Saldo = un único vencimiento.** Sin el módulo Cuotas propias (que todavía no existe), lo que queda a cuenta es un vencimiento con la fecha que se elige al vender. `installments` ya trae `number` y `cost_portion` para que Cuotas lo reparta en varios.
+- **Los números de la venta**: `total − down_payment = financed_amount`. Lo cobrado en el acto es la base más el ajuste de cada medio; lo que queda a cuenta es `subtotal − Σ bases` (el ajuste de un medio solo grava lo que ese medio cobra).
+- **Una venta de contado no toca el libro**, aunque tenga cliente y el módulo esté encendido: solo las ventas con saldo generan movimientos (débito por el total, crédito por cada cobro en el acto).
+- **El cobro baja la deuda por su base**, no por lo que paga el cliente: el recargo o descuento del medio es resultado del cobro, no de la deuda. El crédito del libro es la base.
+- **Imputación**: del más viejo al más nuevo por fecha de vencimiento y luego id, o solo a los vencimientos elegidos. Un cobro no puede superar la deuda total (ni el saldo de lo elegido). El libro nunca se edita: las anulaciones son ajustes. Invariante probada: saldo del libro = Σ saldos de vencimientos abiertos.
+- **Anular una venta con cobros imputados se rechaza**: el evento `SaleCancelled` corre dentro de la transacción, así que el listener del módulo lanza `ValidationException` y no queda nada a medias. Anula primero los cobros, así cada devolución queda registrada.
+- **El anticipo no se anula solo**: es parte de la venta. `PaymentPolicy::cancel` solo admite cobros a cuenta (`sale_id` vacío).
+- **El vendedor cobra pero no anula.** Ve y registra cobros, y ve la ficha de los clientes (los clientes ya eran compartidos); el administrador anula. Para que un vendedor vea los cobros que cargó, `Payment::scopeVisibleTo` incluye los suyos además de los de sus ventas.
+- **Un cliente inactivo con deuda puede pagar.** «Inactivo» solo impide venderle.
+- **Nombres**: la relación de un cobro con sus vencimientos es `imputedInstallments()`, porque `payments.installments` es la cantidad de cuotas del medio de pago (una columna que tapa a la relación del mismo nombre).
+- **Informes de cuenta corriente** (Saldos pendientes y Cobranza del mes): piden Informes y Cuenta corriente (`alsoRequires()`). «Vencido» es lo que ya pasó de su fecha; lo que vence hoy cuenta en el mes actual. No se filtran por Desde/Hasta: usan una foto de hoy y un mes propio.
+- **Demostración**: las ventas a cuenta se marcan en el plan con `on_account` (porcentaje cobrado y días al vencimiento) y solo valen con el módulo encendido; la demo sigue teniendo 25 ventas.
+
 ## Decisiones de diseño (Compras)
 
 - **Todo es del administrador.** Proveedores, órdenes y facturas tienen policies solo para administrador: el vendedor no ve costos de compra.
@@ -89,6 +125,15 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Fechas relativas a hoy** (mes actual, anterior y el previo), sin días futuros, para que el escritorio compare meses.
 - **Administrador de la demo**: el de `.env` si existe; si no, `admin@demo.test`. Vendedores `ana@demo.test` y `luis@demo.test` con `DEMO_PASSWORD`.
 - **`public/build` versionado**: actualizar un servidor no requiere Node. Hay que correr `npm run build` y commitear antes de cada versión.
+
+## Decisiones de diseño (Calidad, 0.15.0)
+
+- **`preventLazyLoading` fuera de producción**: un N+1 rompe en desarrollo y en las pruebas; en producción no rompe la pantalla. `Product::variants()` usa `chaperone('product')` y las listas precargan con `withExists` lo que las policies necesitan.
+- **Policies con dato precargado**: `delete` usa `sales_exists` / `sale_items_exists` si el listado lo trae y consulta solo si no está.
+- **Cabeceras de seguridad sin CSP**: Filament, Livewire y Alpine usan scripts y estilos en línea; una política de contenido necesitaría nonces y se deja para más adelante.
+- **Sin SVG subidos**: solo imágenes de píxeles; un SVG puede ejecutar scripts y se sirve desde el disco público.
+- **La matriz de autorización es la red de seguridad**: toda ruta nueva tiene que declarar quién entra, o la prueba falla.
+- **Mutation testing pendiente**: hace falta un driver de cobertura (xdebug o pcov) que este PHP no tiene.
 
 ## Entorno local
 

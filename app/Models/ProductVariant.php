@@ -143,6 +143,10 @@ class ProductVariant extends Model
 
     protected function activityName(): string
     {
+        // Carga explícita (no «a demanda»): el nombre del registro de actividad necesita el producto
+        // aunque la variante se haya leído sola, y cuando viene del producto ya está cargado.
+        $this->loadMissing('product');
+
         return $this->fullName();
     }
 }

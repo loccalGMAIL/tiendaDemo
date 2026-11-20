@@ -2,7 +2,7 @@ includes:
     - vendor/larastan/larastan/extension.neon
 
 parameters:
-    level: 5
+    level: 6
     # Lee los casts() de los modelos (enums, array, boolean) del código en vez del PHPDoc.
     parseModelCastsMethod: true
     paths:

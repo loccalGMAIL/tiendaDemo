@@ -115,7 +115,7 @@ class ManageAppearance extends Page
                     $this->upload('logo_login', 'Logo del acceso')
                         ->helperText('Opcional: si no hay, el acceso usa el logo para fondo claro.'),
                     $this->upload('favicon', 'Favicon', image: false)
-                        ->acceptedFileTypes(['image/png', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'])
+                        ->acceptedFileTypes(['image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/webp'])
                         ->maxSize(512),
                     $this->upload('share_image', 'Imagen para compartir en redes')
                         ->helperText('Se ve al compartir el enlace del sitio. Recomendado: 1200 × 630 px.'),
@@ -205,6 +205,12 @@ class ManageAppearance extends Page
         return $state;
     }
 
+    /**
+     * Solo imágenes de píxeles: un SVG puede traer scripts y se serviría directo desde el disco
+     * público. Los logos y las imágenes del tema se recortan y se validan como imagen real.
+     */
+    private const RASTER_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
     private function upload(string $name, string $label, bool $image = true): FileUpload
     {
         $upload = FileUpload::make($name)
@@ -214,7 +220,7 @@ class ManageAppearance extends Page
             ->visibility('public')
             ->maxSize(2048);
 
-        return $image ? $upload->image() : $upload;
+        return $image ? $upload->acceptedFileTypes(self::RASTER_TYPES) : $upload;
     }
 
     /**

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'customer_id', 'sale_id', 'date', 'payment_method_id', 'installments', 'adjustment_percent',
@@ -48,8 +49,8 @@ class Payment extends Model
     }
 
     /**
-     * Cobros que el usuario puede ver: un vendedor solo los de sus ventas (salvo
-     * SELLER_SEES_ALL_SALES); el administrador ve todos, incluso los sueltos.
+     * Cobros que el usuario puede ver: un vendedor solo los de sus ventas y los que cobró
+     * él mismo (salvo SELLER_SEES_ALL_SALES); el administrador ve todos, incluso los sueltos.
      *
      * @param  Builder<Payment>  $query
      * @return Builder<Payment>
@@ -57,10 +58,28 @@ class Payment extends Model
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if ($user->isSeller() && ! config('platform.sales.seller_sees_all')) {
-            $query->whereHas('sale', fn (Builder $sales) => $sales->where('seller_id', $user->getKey()));
+            $query->where(fn (Builder $own) => $own
+                ->whereHas('sale', fn (Builder $sales) => $sales->where('seller_id', $user->getKey()))
+                ->orWhere('collected_by', $user->getKey()));
         }
 
         return $query;
+    }
+
+    /**
+     * Cobros sueltos a cuenta de un cliente (sin venta propia): los que carga Cuenta corriente.
+     *
+     * @param  Builder<Payment>  $query
+     * @return Builder<Payment>
+     */
+    public function scopeOnAccount(Builder $query): Builder
+    {
+        return $query->whereNull('sale_id')->whereNotNull('customer_id');
+    }
+
+    public function isOnAccount(): bool
+    {
+        return $this->sale_id === null && $this->customer_id !== null;
     }
 
     /**
@@ -72,6 +91,18 @@ class Payment extends Model
     public function scopeNotCancelled(Builder $query): Builder
     {
         return $query->whereNull('cancelled_at');
+    }
+
+    /**
+     * Vencimientos a los que se imputó este cobro (con lo imputado en el pivot).
+     *
+     * @return BelongsToMany<Installment, $this>
+     */
+    public function imputedInstallments(): BelongsToMany
+    {
+        return $this->belongsToMany(Installment::class, 'installment_payment')
+            ->withPivot('amount')
+            ->withTimestamps();
     }
 
     /**

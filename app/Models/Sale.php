@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'customer_id', 'seller_id', 'date', 'subtotal', 'adjustment', 'total', 'total_cost',
-    'down_payment', 'financed_amount', 'financing_plan_id', 'installments_count', 'first_due_date',
+    'down_payment', 'financed_amount', 'financing_surcharge', 'financing_surcharge_percent',
+    'financing_plan_id', 'installments_count', 'first_due_date',
     'status', 'notes',
 ])]
 class Sale extends Model
@@ -38,6 +39,8 @@ class Sale extends Model
             'total' => 'decimal:2',
             'total_cost' => 'decimal:2',
             'down_payment' => 'decimal:2',
+            'financing_surcharge' => 'decimal:2',
+            'financing_surcharge_percent' => 'decimal:2',
             'financed_amount' => 'decimal:2',
             'status' => SaleStatus::class,
             'cancelled_at' => 'datetime',
@@ -106,6 +109,27 @@ class Sale extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /**
+     * Plan de financiación elegido al vender (módulo Cuotas propias). La venta copió sus datos:
+     * puede haberse cambiado o desactivado después.
+     *
+     * @return BelongsTo<FinancingPlan, $this>
+     */
+    public function financingPlan(): BelongsTo
+    {
+        return $this->belongsTo(FinancingPlan::class);
+    }
+
+    /**
+     * Vencimientos del saldo (módulo Cuenta corriente).
+     *
+     * @return HasMany<Installment, $this>
+     */
+    public function installments(): HasMany
+    {
+        return $this->hasMany(Installment::class)->orderBy('number');
     }
 
     /**

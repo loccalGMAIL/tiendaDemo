@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['module' => EnsureModuleEnabled::class]);
 
         $middleware->trustProxies(at: $proxies === '*' ? '*' : array_filter(array_map('trim', explode(',', (string) $proxies))));
+
+        // Cabeceras de seguridad en toda respuesta web (landing, paneles e impresiones).
+        $middleware->web(append: [SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

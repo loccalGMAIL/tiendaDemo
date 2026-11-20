@@ -35,6 +35,9 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer): bool
     {
-        return $user->isAdmin() && ! $customer->sales()->exists();
+        // Los listados precargan «sales_exists» (withExists) para no consultar una vez por fila.
+        $hasSales = $customer->sales_exists ?? $customer->sales()->exists();
+
+        return $user->isAdmin() && ! $hasSales;
     }
 }

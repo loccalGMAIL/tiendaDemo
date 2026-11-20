@@ -8,9 +8,11 @@ use App\Facades\Modules;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Models\Customer;
+use App\Models\FinancingPlan;
 use App\Models\PaymentMethod;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\InstallmentSchedule;
 use App\Services\Money;
 use App\Services\SaleCalculator;
 use Filament\Forms\Components\DatePicker;
@@ -23,6 +25,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 
 class SaleForm
 {
@@ -39,6 +42,9 @@ class SaleForm
                         ->getSearchResultsUsing(fn (string $search): array => self::searchCustomers($search))
                         ->options(fn (): array => self::searchCustomers(''))
                         ->getOptionLabelUsing(fn (mixed $value): ?string => Customer::query()->find($value)?->name)
+                        // Con saldo a cuenta (módulo Cuenta corriente) la venta necesita un cliente.
+                        ->required(fn (Get $get): bool => self::leavesBalance($get))
+                        ->helperText(fn (Get $get): ?string => self::leavesBalance($get) ? 'Obligatorio: la venta deja saldo a cuenta del cliente.' : null)
                         // Alta rápida de cliente sin salir de la venta.
                         ->createOptionForm(CustomerForm::fields())
                         ->createOptionUsing(fn (array $data): int => Customer::create($data)->getKey()),
@@ -127,11 +133,14 @@ class SaleForm
                         ]),
                 ]),
             Section::make('Cobro')
-                ->description('Con varios medios de pago, la suma de los montos tiene que dar el subtotal.')
+                ->description(fn (): string => self::onAccount()
+                    ? 'Lo que se cobra ahora. Lo que falte queda a cuenta del cliente; sin ningún cobro, la venta queda entera a cuenta.'
+                    : 'Con varios medios de pago, la suma de los montos tiene que dar el subtotal.')
                 ->schema([
                     Repeater::make('payments')
                         ->hiddenLabel()
-                        ->minItems(1)
+                        // Con Cuenta corriente se puede no cobrar nada en el acto.
+                        ->minItems(fn (): int => self::onAccount() ? 0 : 1)
                         ->defaultItems(1)
                         ->addActionLabel('Agregar otro medio de pago')
                         ->live()
@@ -158,8 +167,9 @@ class SaleForm
                                 ->step('0.01')
                                 ->prefix('$')
                                 ->live(onBlur: true)
-                                // Con un solo medio de pago cubre todo el subtotal.
-                                ->visible(fn (Get $get): bool => count($get('../../payments') ?? []) > 1)
+                                // Con un solo medio de pago cubre todo el subtotal (o lo que se indique, con Cuenta corriente).
+                                ->placeholder(fn (): ?string => self::onAccount() ? 'Todo el subtotal' : null)
+                                ->visible(fn (Get $get): bool => self::onAccount() || count($get('../../payments') ?? []) > 1)
                                 ->required(fn (Get $get): bool => count($get('../../payments') ?? []) > 1)
                                 ->columnSpan(6),
                         ]),
@@ -168,8 +178,45 @@ class SaleForm
                 ->schema([
                     Text::make(fn (Get $get): string => 'Subtotal: '.Money::format(self::calculation($get)['subtotal'])),
                     Text::make(fn (Get $get): string => 'Recargos y descuentos: '.Money::format(self::calculation($get)['adjustment'])),
-                    Text::make(fn (Get $get): string => 'Total a cobrar: '.Money::format(self::calculation($get)['total']))
+                    Text::make(fn (Get $get): string => (self::onAccount() ? 'Total de la venta: ' : 'Total a cobrar: ').Money::format(self::calculation($get)['total']))
                         ->size('lg'),
+                    Text::make(fn (Get $get): string => 'Se cobra ahora: '.Money::format(Money::sub(self::calculation($get)['total'], self::calculation($get)['balance'])))
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                    Text::make(fn (Get $get): string => 'A cuenta del cliente: '.Money::format(self::calculation($get)['balance']))
+                        ->size('lg')
+                        ->color('warning')
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get)),
+                    // Cuotas propias: un plan reparte el saldo en cuotas con su recargo.
+                    Select::make('financing_plan_id')
+                        ->label('Plan de pago')
+                        ->placeholder('Un solo vencimiento')
+                        ->options(fn (): array => FinancingPlan::query()
+                            ->where('active', true)
+                            ->orderBy('position')
+                            ->orderBy('id')
+                            ->get()
+                            ->mapWithKeys(fn (FinancingPlan $plan): array => [$plan->getKey() => $plan->label()])
+                            ->all())
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get) && self::onInstallments()),
+                    Select::make('first_month')
+                        ->label('Mes de la primera cuota')
+                        ->options(fn (Get $get): array => self::monthOptions($get))
+                        ->default(fn (): string => now()->addMonthNoOverflow()->format('Y-m'))
+                        ->native(false)
+                        ->live()
+                        ->visible(fn (Get $get): bool => self::usesPlan($get) && self::dueRule() === InstallmentSchedule::RULE_FIXED_DAY)
+                        ->helperText(fn (): string => 'Vencen el día '.self::fixedDay().' de cada mes.'),
+                    Text::make(fn (Get $get): string => self::planPreview($get))
+                        ->extraAttributes(['style' => 'white-space: pre-line;'])
+                        ->visible(fn (Get $get): bool => self::usesPlan($get)),
+                    DatePicker::make('due_date')
+                        ->label('Vencimiento del saldo')
+                        ->default(fn (): string => now()->addDays(30)->toDateString())
+                        ->minDate(fn (Get $get): mixed => $get('date'))
+                        ->required(fn (Get $get): bool => self::leavesBalance($get) && ! self::usesPlan($get))
+                        ->visible(fn (Get $get): bool => self::leavesBalance($get) && ! self::usesPlan($get)),
                     Text::make(fn (Get $get): string => self::balanceWarning($get) ?? '')
                         ->color('danger')
                         ->visible(fn (Get $get): bool => self::balanceWarning($get) !== null),
@@ -177,10 +224,119 @@ class SaleForm
         ]);
     }
 
+    private static function onAccount(): bool
+    {
+        return Modules::enabled(Module::CurrentAccount);
+    }
+
+    private static function onInstallments(): bool
+    {
+        return Modules::enabled(Module::Installments);
+    }
+
+    /**
+     * Hay saldo y se eligió un plan de financiación (módulo Cuotas propias).
+     */
+    private static function usesPlan(Get $get): bool
+    {
+        return self::onInstallments() && self::leavesBalance($get) && filled($get('financing_plan_id'));
+    }
+
+    private static function dueRule(): string
+    {
+        return (string) Modules::setting(Module::Installments, 'due_rule', InstallmentSchedule::RULE_FIXED_DAY);
+    }
+
+    private static function fixedDay(): int
+    {
+        return (int) Modules::setting(Module::Installments, 'fixed_day', 10);
+    }
+
+    private static function saleDate(Get $get): Carbon
+    {
+        $date = $get('date');
+
+        try {
+            return filled($date) ? Carbon::parse($date)->startOfDay() : now()->startOfDay();
+        } catch (\Throwable) {
+            return now()->startOfDay();
+        }
+    }
+
+    /**
+     * Meses para la primera cuota: el de la venta y los 11 siguientes.
+     *
+     * @return array<string, string>
+     */
+    private static function monthOptions(Get $get): array
+    {
+        $start = self::saleDate($get)->startOfMonth();
+        $options = [];
+
+        foreach (range(0, 11) as $offset) {
+            $month = $start->copy()->addMonthsNoOverflow($offset);
+            $options[$month->format('Y-m')] = ucfirst($month->locale('es')->translatedFormat('F Y'));
+        }
+
+        return $options;
+    }
+
+    /**
+     * Vista previa en vivo con el mismo servicio que arma las cuotas de la venta real.
+     */
+    private static function planPreview(Get $get): string
+    {
+        $plan = FinancingPlan::query()->find($get('financing_plan_id'));
+
+        if ($plan === null) {
+            return '';
+        }
+
+        $schedule = new InstallmentSchedule;
+        $balance = self::calculation($get)['balance'];
+        $surcharge = $schedule->surcharge($balance, (string) $plan->surcharge_percent);
+        $financed = Money::add($balance, $surcharge);
+
+        $saleDate = self::saleDate($get);
+        $rule = self::dueRule();
+        $month = filled($get('first_month')) ? (string) $get('first_month') : null;
+        $first = $schedule->firstDueDate($saleDate, $rule, self::fixedDay(), $month);
+        $rows = $schedule->build($financed, $plan->installments_count, $first, $schedule->anchorDay($saleDate, $rule, self::fixedDay()), '0.00');
+
+        $lines = [
+            'A financiar: '.Money::format($balance).(Money::compare($surcharge, '0') > 0 ? ' + recargo '.Money::format($surcharge).' = '.Money::format($financed) : ''),
+            "{$plan->installments_count} cuotas:",
+        ];
+
+        foreach ($rows as $row) {
+            $lines[] = $row['number'].'. '.$row['due_date']->format('d/m/Y').' — '.Money::format($row['amount']);
+        }
+
+        if ($first->lt($saleDate)) {
+            $lines[] = 'Atención: la primera cuota vence antes de la venta; elegí otro mes.';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Con Cuenta corriente: los cobros dejan algo sin cubrir y hay con qué armar el saldo.
+     */
+    private static function leavesBalance(Get $get): bool
+    {
+        if (! self::onAccount()) {
+            return false;
+        }
+
+        $calculation = self::calculation($get);
+
+        return ! $calculation['overpaid'] && Money::compare($calculation['balance'], '0') > 0;
+    }
+
     /**
      * Cálculo en vivo con el mismo servicio que usa la venta real.
      *
-     * @return array{subtotal: string, adjustment: string, total: string, payments: list<array{base_amount: string, adjustment_amount: string, amount: string}>, balanced: bool}
+     * @return array{subtotal: string, adjustment: string, total: string, payments: list<array{base_amount: string, adjustment_amount: string, amount: string}>, balanced: bool, balance: string, overpaid: bool}
      */
     private static function calculation(Get $get): array
     {
@@ -197,10 +353,12 @@ class SaleForm
         }
 
         $rawPayments = array_values($get('payments') ?? []);
-        $methods = PaymentMethod::query()
-            ->whereIn('id', collect($rawPayments)->pluck('payment_method_id')->filter())
-            ->get()
-            ->keyBy('id');
+        $methodIds = collect($rawPayments)->pluck('payment_method_id')->filter();
+
+        // Sin medio de pago elegido no hay nada que consultar (el formulario recalcula varias veces por pantalla).
+        $methods = $methodIds->isEmpty()
+            ? collect()
+            : PaymentMethod::query()->whereIn('id', $methodIds)->get()->keyBy('id');
 
         $payments = [];
 
@@ -225,6 +383,11 @@ class SaleForm
         $calculation = self::calculation($get);
 
         if ($calculation['payments'] === [] || $calculation['balanced'] || Money::compare($calculation['subtotal'], '0') === 0) {
+            return null;
+        }
+
+        // Con Cuenta corriente cobrar de menos es válido (queda a cuenta); solo se avisa si se pasa.
+        if (self::onAccount() && ! $calculation['overpaid']) {
             return null;
         }
 

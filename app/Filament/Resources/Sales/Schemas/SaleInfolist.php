@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\Sales\Schemas;
 
+use App\Enums\Module;
+use App\Facades\Modules;
+use App\Models\Installment;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
@@ -80,6 +83,40 @@ class SaleInfolist
                             TextEntry::make('base_amount')->label('Monto base')->money('ARS', locale: 'es_AR'),
                             TextEntry::make('adjustment_amount')->label('Recargo / descuento')->money('ARS', locale: 'es_AR'),
                             TextEntry::make('amount')->label('Cobrado')->money('ARS', locale: 'es_AR'),
+                        ]),
+                ]),
+            Section::make('Cuenta corriente')
+                ->columns(4)
+                ->visible(fn (Sale $record): bool => Modules::enabled(Module::CurrentAccount) && Money::compare((string) $record->financed_amount, '0') > 0)
+                ->schema([
+                    TextEntry::make('down_payment')->label('Cobrado en el acto')->money('ARS', locale: 'es_AR'),
+                    TextEntry::make('financed_amount')->label('Quedó a cuenta')->money('ARS', locale: 'es_AR'),
+                    TextEntry::make('first_due_date')->label('Vencimiento')->date('d/m/Y'),
+                    TextEntry::make('pending')
+                        ->label('Saldo pendiente')
+                        ->state(fn (Sale $record): string => Money::sum(
+                            $record->installments()->open()->get()->map(fn (Installment $installment): string => $installment->balance())->all(),
+                        ))
+                        ->money('ARS', locale: 'es_AR'),
+                    // Cuotas propias: el plan con el que se vendió (copiado a la venta).
+                    TextEntry::make('financing')
+                        ->label('Plan de pago')
+                        ->state(fn (Sale $record): string => $record->installments_count.' cuotas'.(Money::compare((string) $record->financing_surcharge, '0') > 0
+                            ? ' · recargo '.Money::format((string) $record->financing_surcharge).' ('.rtrim(rtrim(number_format((float) $record->financing_surcharge_percent, 2, ',', ''), '0'), ',').' %)'
+                            : ''))
+                        ->visible(fn (Sale $record): bool => $record->installments_count !== null)
+                        ->columnSpanFull(),
+                    RepeatableEntry::make('installments')
+                        ->label('Cuotas')
+                        ->visible(fn (Sale $record): bool => $record->installments()->count() > 1)
+                        ->columns(5)
+                        ->columnSpanFull()
+                        ->schema([
+                            TextEntry::make('number')->label('N°'),
+                            TextEntry::make('due_date')->label('Vence')->date('d/m/Y'),
+                            TextEntry::make('amount')->label('Monto')->money('ARS', locale: 'es_AR'),
+                            TextEntry::make('paid_amount')->label('Pagado')->money('ARS', locale: 'es_AR'),
+                            TextEntry::make('status')->label('Estado')->badge(),
                         ]),
                 ]),
             Section::make('Importes')

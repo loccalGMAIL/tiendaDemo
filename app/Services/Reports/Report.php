@@ -27,6 +27,19 @@ abstract class Report
     }
 
     /**
+     * Qué abarca el informe con estos filtros, para el encabezado de la impresión. Por defecto
+     * el período; los que no se filtran por período lo sobrescriben.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function describe(array $filters): string
+    {
+        [$from, $to] = static::period($filters);
+
+        return 'Período: '.$from->format('d/m/Y').' al '.$to->format('d/m/Y');
+    }
+
+    /**
      * Porcentaje del monto que representa la parte, a 2 decimales (0 si no hay base).
      */
     protected function percentage(string $part, string $base): string

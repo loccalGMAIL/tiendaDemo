@@ -113,7 +113,17 @@ class Product extends Model
      */
     public function variants(): HasMany
     {
-        return $this->hasMany(ProductVariant::class)->orderBy('position')->orderBy('id');
+        // chaperone: las variantes que se crean o se leen desde el producto ya conocen a su producto
+        // (su nombre y el registro de actividad lo necesitan) sin una consulta por variante.
+        return $this->hasMany(ProductVariant::class)->chaperone('product')->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * @return HasMany<SaleItem, $this>
+     */
+    public function saleItems(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
     }
 
     /**
