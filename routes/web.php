@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\GoogleLoginController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PurchaseOrderPrintController;
 use App\Http\Controllers\ReportPrintController;
@@ -20,6 +21,15 @@ Route::domain(config('domains.landing'))->group(function () {
 });
 
 Route::domain(config('domains.panel'))->get('/up', fn () => response('OK'))->name('health');
+
+// Login con Google (módulo Login con Google): con el módulo apagado responde 404. No registra usuarios.
+Route::domain(config('domains.panel'))
+    ->middleware('module:google-login')
+    ->prefix('auth/google')
+    ->group(function () {
+        Route::get('/redirect', [GoogleLoginController::class, 'redirect'])->name('google-login.redirect');
+        Route::get('/callback', [GoogleLoginController::class, 'callback'])->name('google-login.callback');
+    });
 
 // Orden de compra imprimible (módulo Compras): con el módulo apagado responde 404; solo administradores.
 Route::domain(config('domains.panel'))

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.0 — Login con Google (Fase 12)
+
+Requiere migración: no (`users.google_id` ya existía).
+
+- **Módulo Login con Google**: con el módulo encendido, el login del panel admin muestra el botón «Ingresar con Google». Rutas `auth/google/redirect` y `auth/google/callback` en el dominio del panel; con el módulo apagado responden 404 y no hay botón.
+- **No registra usuarios**: entra solo quien ya existe, está activo y puede usar el panel. Se busca por `google_id` o, si no tiene uno vinculado, por email (y se guarda el `google_id`). Un email ya vinculado a otra cuenta de Google no entra. Inactivos, SuperAdmin y desconocidos vuelven al login con un aviso.
+- No aplica al panel `superadmin`. Sigue sin poder encenderse sin `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en el `.env`.
+- Requiere registrar `https://{PANEL_DOMAIN}/auth/google/callback` como URI de redirección en Google Cloud (Google no acepta hosts `*.localhost`: en local se prueba con túnel público o con los tests).
+
 ## 0.11.0 — Informe de compras por proveedor
 
 Requiere migración: no.
