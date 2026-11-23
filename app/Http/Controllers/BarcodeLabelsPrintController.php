@@ -39,7 +39,7 @@ class BarcodeLabelsPrintController extends Controller
             return redirect()->to(Filament::getPanel('admin')->getLoginUrl() ?? '/');
         }
 
-        abort_unless($user->isAdmin(), 403);
+        abort_unless($user->active && $user->isAdmin(), 403);
 
         $layout = LabelLayout::fromSettings(Modules::settings(Module::Barcodes));
         $requested = self::parseSelection((string) $request->query('v', ''));

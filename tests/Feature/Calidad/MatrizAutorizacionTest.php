@@ -51,6 +51,7 @@ function declaredAccess(): array
         '/suppliers', '/suppliers/create', '/suppliers/{record}/edit',
         '/users', '/users/create', '/users/{record}/edit',
         '/informes/{report}/imprimir', '/compras/ordenes/{order}/imprimir',
+        '/barcode-labels', '/etiquetas/imprimir',
     ];
     $platform = ['/profile', '/appearance', '/modules', '/', '/activity-logs', '/activity-logs/{record}', '/users', '/users/create', '/users/{record}/edit'];
 

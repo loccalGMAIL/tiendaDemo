@@ -54,6 +54,12 @@ it('el vendedor no puede imprimir etiquetas ni ver la página', function () {
     $this->actingAs($this->seller)->get($this->panel.'/barcode-labels')->assertForbidden();
 });
 
+it('un administrador desactivado no puede imprimir etiquetas', function () {
+    $inactive = User::factory()->admin()->inactive()->create();
+
+    $this->actingAs($inactive)->get($this->panel.'/etiquetas/imprimir?v='.$this->variantM->id.':1')->assertForbidden();
+});
+
 it('sin sesión la impresión manda al login', function () {
     $this->get($this->panel.'/etiquetas/imprimir?v=1:1')->assertRedirect();
 });
