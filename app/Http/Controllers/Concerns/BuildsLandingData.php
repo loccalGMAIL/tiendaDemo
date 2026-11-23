@@ -20,9 +20,9 @@ trait BuildsLandingData
     /**
      * @return array<string, mixed>
      */
-    protected function landingData(Request $request): array
+    protected function landingData(Request $request, ?SiteContent $siteContent = null): array
     {
-        $siteContent = app(SiteContent::class);
+        $siteContent ??= app(SiteContent::class);
         $appearance = app(Appearance::class);
 
         // El botón «Ingresar al sistema» lleva al panel conservando esquema y puerto.
@@ -49,11 +49,15 @@ trait BuildsLandingData
             ? Product::query()->inCatalog()->where('is_featured', true)->with(['category', 'variants'])->orderBy('name')->limit(8)->get()
             : collect();
 
-        $visible = collect(array_keys(SiteContent::SECTIONS))
+        $visible = collect($siteContent->sectionOrder())
             ->filter(fn (string $section): bool => $siteContent->sectionEnabled($section) && match ($section) {
                 'hero' => true,
                 'value' => $site['value_items'] !== [],
                 'catalog' => $categories->isNotEmpty() || $featured->isNotEmpty(),
+                'about' => trim($site['about_text']) !== '',
+                'services' => $site['service_items'] !== [],
+                'gallery' => collect($site['gallery_items'])->contains(fn (array $item): bool => $siteContent->imageUrl($item['image']) !== null),
+                'banner' => trim($site['banner_title']) !== '',
                 'faq' => $site['faq_items'] !== [],
                 'contact' => $siteContent->hasContact(),
                 default => false,

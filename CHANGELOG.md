@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.16.0 (2026-11-23) — Personalización de la landing
+
+Requiere migración: no.
+
+- **Estructura a cargo del SuperAdmin**: Apariencia permite elegir y ordenar las secciones. Se conserva la visibilidad anterior hasta configurar una estructura explícita; el cliente ya no modifica la estructura.
+- **Contenido para distintos rubros**: presentación del negocio, servicios, galería con descripciones, novedades y horarios. El cliente edita textos y fotografías de las secciones habilitadas, sin acceder a temas, logos ni diseño. Las imágenes aceptan JPEG, PNG y WebP hasta 4 MB.
+- **Con o sin catálogo**: las secciones sin contenido no aparecen y el catálogo sigue dependiendo de su módulo. La portada prioriza el catálogo cuando existe; sin él ofrece WhatsApp, contacto o servicios según disponibilidad.
+- **Interfaz pública**: menú móvil sin dependencia de JavaScript, acceso al sistema trasladado al pie, portada sin espacios gráficos vacíos y mejoras de foco y movimiento reducido en ambos temas.
+- **Compatibilidad**: las fotografías del tema siguen funcionando como alternativa si el cliente no carga una portada. No se borran archivos ni contenido al ocultar secciones.
+- **Editor por pestañas**: secciones habilitadas en el orden del sitio, vista previa reactiva de la sección activa con el tema y los colores actuales, e imágenes temporales antes de guardar. Los elementos de servicios, galería, puntos destacados y preguntas frecuentes se muestran plegados y con títulos identificables.
+- **Cambios sin publicar**: aviso de modificaciones pendientes; la vista previa acompaña la edición, el agregado y la eliminación de elementos sin modificar el sitio público hasta guardar.
+- **Demostración gastronómica**: seeder `EatViandasSeeder` con contenido y fotografías de «eat! viandas saludables», reutilizando el armado de la demo existente.
+- Fuera de esta entrega: borradores persistentes y variantes de composición. La vista previa no publica cambios; guardar contenido sigue actualizando el sitio público.
+
 ## 0.15.0 (2026-11-18) — Revisión de calidad, sin funciones nuevas
 
 Requiere migración: no.

@@ -8,7 +8,7 @@
 
     <main>
         @foreach ($sections as $section)
-            @include('landings.clasico.'.$section)
+            @includeFirst(['landings.clasico.'.$section, 'landings.partials.'.$section])
         @endforeach
     </main>
 

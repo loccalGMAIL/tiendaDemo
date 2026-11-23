@@ -3,31 +3,44 @@
 namespace App\Filament\Pages;
 
 use App\Enums\ActivityEvent;
+use App\Http\Controllers\Concerns\BuildsLandingData;
 use App\Services\ActivityLogger;
 use App\Services\SiteContent;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
- * Configuración → Sitio: el contenido de la landing (solo texto). Siempre
- * disponible para el administrador; el diseño, los logos y los temas los
- * maneja el SuperAdmin.
+ * Configuración → Sitio: textos y fotografías de las secciones habilitadas.
+ * El diseño, los logos, los temas y la estructura los maneja el SuperAdmin.
  *
  * @property-read Schema $form
  */
 class SiteSettings extends AdministratorPage
 {
+    use BuildsLandingData;
+
+    protected string $view = 'filament.pages.site-settings';
+
+    public string $activeSection = 'business';
+
+    #[Locked]
+    public string $savedStateHash = '';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;
 
     protected static ?string $navigationLabel = 'Sitio';
@@ -48,17 +61,30 @@ class SiteSettings extends AdministratorPage
     public function mount(): void
     {
         $this->form->fill(app(SiteContent::class)->all());
+        $this->savedStateHash = $this->stateHash();
     }
 
     public function defaultForm(Schema $schema): Schema
     {
-        return $schema->statePath('data');
+        return $schema->statePath('data')->live(debounce: 500);
     }
 
     public function form(Schema $schema): Schema
     {
         return $schema->columns(1)->components([
-            Section::make('Negocio')
+            Tabs::make('Secciones del sitio')
+                ->livewireProperty('activeSection')
+                ->tabs($this->sectionTabs()),
+        ]);
+    }
+
+    /**
+     * @return array<string, Tab>
+     */
+    private function sectionTabs(): array
+    {
+        $tabs = [
+            'business' => Tab::make('Negocio')
                 ->columns(2)
                 ->schema([
                     TextInput::make('name')
@@ -69,7 +95,7 @@ class SiteSettings extends AdministratorPage
                         ->label('Lema')
                         ->maxLength(160),
                 ]),
-            Section::make('Portada')
+            'hero' => Tab::make('Portada')
                 ->schema([
                     TextInput::make('hero_title')
                         ->label('Título principal')
@@ -79,14 +105,61 @@ class SiteSettings extends AdministratorPage
                         ->label('Texto de apoyo')
                         ->rows(2)
                         ->maxLength(300),
+                    $this->imageUpload('hero_image', 'Imagen de portada')
+                        ->helperText('Horizontal, recomendado 1600 × 1000 px. Si no cargás una, se usa la imagen del diseño.'),
+                    TextInput::make('hero_image_alt')
+                        ->label('Descripción de la imagen')
+                        ->maxLength(160),
                 ]),
-            Section::make('Por qué elegirnos')
-                ->collapsible()
+            'about' => Tab::make('Nuestro negocio')
+                ->schema([
+                    TextInput::make('about_title')->label('Título')->maxLength(80),
+                    Textarea::make('about_text')->label('Presentación')->rows(5)->maxLength(2000),
+                    $this->imageUpload('about_image', 'Fotografía del negocio'),
+                ]),
+            'services' => Tab::make('Servicios')
+                ->schema([
+                    TextInput::make('services_title')->label('Título')->maxLength(80),
+                    Repeater::make('service_items')
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): string => filled($state['title'] ?? null) ? $state['title'] : 'Nuevo servicio')
+                        ->label('Servicios o propuestas')
+                        ->addActionLabel('Agregar servicio')
+                        ->maxItems(12)
+                        ->defaultItems(0)
+                        ->schema([
+                            TextInput::make('title')->label('Nombre')->required()->maxLength(80),
+                            Textarea::make('text')->label('Descripción')->maxLength(500),
+                        ]),
+                ]),
+            'gallery' => Tab::make('Galería')
+                ->schema([
+                    TextInput::make('gallery_title')->label('Título')->maxLength(80),
+                    Repeater::make('gallery_items')
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): string => filled($state['alt'] ?? null) ? $state['alt'] : 'Nueva fotografía')
+                        ->label('Fotografías')
+                        ->maxItems(12)
+                        ->defaultItems(0)
+                        ->addActionLabel('Agregar fotografía')
+                        ->schema([
+                            $this->imageUpload('image', 'Imagen')->required(),
+                            TextInput::make('alt')->label('Descripción de la imagen')->required()->maxLength(160),
+                        ]),
+                ]),
+            'banner' => Tab::make('Novedades')
+                ->schema([
+                    TextInput::make('banner_title')->label('Título')->maxLength(120),
+                    Textarea::make('banner_text')->label('Texto')->maxLength(500),
+                ]),
+            'value' => Tab::make('Por qué elegirnos')
                 ->schema([
                     TextInput::make('value_title')
                         ->label('Título de la sección')
                         ->maxLength(80),
                     Repeater::make('value_items')
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): string => filled($state['title'] ?? null) ? $state['title'] : 'Nuevo punto')
                         ->label('Puntos a destacar')
                         ->addActionLabel('Agregar punto')
                         ->maxItems(6)
@@ -102,10 +175,11 @@ class SiteSettings extends AdministratorPage
                                 ->maxLength(300),
                         ]),
                 ]),
-            Section::make('Preguntas frecuentes')
-                ->collapsible()
+            'faq' => Tab::make('Preguntas frecuentes')
                 ->schema([
                     Repeater::make('faq_items')
+                        ->collapsed()
+                        ->itemLabel(fn (array $state): string => filled($state['question'] ?? null) ? $state['question'] : 'Nueva pregunta')
                         ->hiddenLabel()
                         ->addActionLabel('Agregar pregunta')
                         ->maxItems(12)
@@ -122,8 +196,7 @@ class SiteSettings extends AdministratorPage
                                 ->maxLength(600),
                         ]),
                 ]),
-            Section::make('Contacto')
-                ->collapsible()
+            'contact' => Tab::make('Contacto')
                 ->columns(2)
                 ->schema([
                     TextInput::make('phone')
@@ -142,6 +215,10 @@ class SiteSettings extends AdministratorPage
                     TextInput::make('address')
                         ->label('Dirección')
                         ->maxLength(200),
+                    Textarea::make('hours')
+                        ->label('Horarios de atención')
+                        ->rows(3)
+                        ->maxLength(500),
                     TextInput::make('instagram')
                         ->label('Instagram')
                         ->url()
@@ -158,15 +235,109 @@ class SiteSettings extends AdministratorPage
                         ->placeholder('https://tiktok.com/@…')
                         ->maxLength(200),
                 ]),
-            Section::make('Secciones visibles')
-                ->description('Las secciones sin contenido no se muestran aunque estén activas.')
-                ->columns(3)
-                ->schema(array_map(
-                    fn (string $section, string $label): Toggle => Toggle::make("sections.{$section}")->label($label),
-                    array_keys(SiteContent::SECTIONS),
-                    SiteContent::SECTIONS,
-                )),
-        ]);
+        ];
+
+        $ordered = ['business' => $tabs['business']];
+
+        foreach (app(SiteContent::class)->sectionOrder() as $section) {
+            if (isset($tabs[$section])) {
+                $ordered[$section] = $tabs[$section];
+            }
+        }
+
+        return $ordered;
+    }
+
+    #[Computed]
+    public function hasUnsavedChanges(): bool
+    {
+        return $this->stateHash() !== $this->savedStateHash;
+    }
+
+    private function stateHash(): string
+    {
+        $state = $this->data ?? [];
+        array_walk_recursive($state, function (mixed &$value): void {
+            if ($value instanceof TemporaryUploadedFile) {
+                $value = $value->getFilename();
+            }
+        });
+
+        return hash('sha256', serialize($state));
+    }
+
+    #[Computed]
+    public function previewHtml(): string
+    {
+        $siteContent = app(SiteContent::class);
+        $content = array_replace($siteContent->all(), $this->data ?? []);
+        $imageUrls = [];
+
+        foreach (['hero_image', 'about_image'] as $field) {
+            $content[$field] = $this->previewImage($content[$field], $imageUrls);
+        }
+
+        foreach ([
+            'service_items' => ['title' => '', 'text' => ''],
+            'gallery_items' => ['image' => null, 'alt' => ''],
+            'value_items' => ['title' => '', 'text' => ''],
+            'faq_items' => ['question' => '', 'answer' => ''],
+        ] as $field => $defaults) {
+            $content[$field] = array_values(array_map(
+                fn (array $item): array => array_replace($defaults, array_filter($item, fn (mixed $value): bool => $value !== null)),
+                $content[$field] ?? [],
+            ));
+        }
+
+        foreach ($content['gallery_items'] as &$item) {
+            $item['image'] = $this->previewImage($item['image'] ?? null, $imageUrls);
+        }
+        unset($item);
+
+        foreach ($siteContent->defaults() as $field => $default) {
+            if (is_string($default)) {
+                $content[$field] ??= '';
+            }
+        }
+
+        $preview = $siteContent->withPreviewContent($content, $imageUrls);
+        $section = $this->activeSection !== 'catalog' && $siteContent->sectionEnabled($this->activeSection)
+            ? $this->activeSection
+            : 'business';
+
+        return view('filament.pages.site-section-preview', [
+            ...$this->landingData(request(), $preview),
+            'previewSection' => $section,
+        ])->render();
+    }
+
+    /**
+     * @param  array<string, string>  $imageUrls
+     */
+    private function previewImage(mixed $image, array &$imageUrls): ?string
+    {
+        if (is_array($image)) {
+            $image = reset($image);
+        }
+
+        if ($image instanceof TemporaryUploadedFile) {
+            if (! in_array($image->getMimeType(), ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                return null;
+            }
+
+            $url = $image->temporaryUrl();
+
+            if (! is_string($url)) {
+                return null;
+            }
+
+            $key = 'site/preview/'.count($imageUrls);
+            $imageUrls[$key] = $url;
+
+            return $key;
+        }
+
+        return is_string($image) ? $image : null;
     }
 
     public function content(Schema $schema): Schema
@@ -191,7 +362,11 @@ class SiteSettings extends AdministratorPage
         $site = app(SiteContent::class);
         $before = $site->all();
 
-        $site->save($this->form->getState());
+        $content = $this->form->getState();
+        unset($content['sections']);
+        $site->save(array_merge($before, $content));
+        $this->savedStateHash = $this->stateHash();
+        unset($this->hasUnsavedChanges, $this->previewHtml);
 
         $changes = $this->changes($before, $site->all());
 
@@ -204,6 +379,18 @@ class SiteSettings extends AdministratorPage
         }
 
         Notification::make()->title('Sitio actualizado')->success()->send();
+    }
+
+    private function imageUpload(string $name, string $label): FileUpload
+    {
+        return FileUpload::make($name)
+            ->label($label)
+            ->disk('public')
+            ->directory('site')
+            ->visibility('public')
+            ->image()
+            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->maxSize(4096);
     }
 
     /**
