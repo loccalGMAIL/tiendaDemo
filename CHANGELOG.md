@@ -13,6 +13,13 @@ Requiere migración: no (el código es el SKU, que ya existía).
 - Para imprimir: elegir en el diálogo la impresora de etiquetas, el tamaño de papel de la etiqueta, escala 100 % y sin márgenes. El lector tiene que usar la **misma distribución de teclado** que la PC (si no, el `-` del SKU llega cambiado).
 - Con etiquetas de 50 mm conviene SKU de hasta unos 12 caracteres para que las barras no queden demasiado finas; con SKU más largos, usar una etiqueta más ancha.
 
+## 0.16.1 (2026-11-23) — Ajustes de navegación
+
+Requiere migración: no.
+
+- **Pestañas del sitio**: todas las secciones habilitadas quedan visibles en varias filas según el ancho disponible, sin desplazamiento horizontal. El ajuste se limita al editor del sitio.
+- **Ingreso al sistema**: se restaura el botón «Ingresar» junto a «Catálogo» en el encabezado de ambos temas, también en celulares y aunque el catálogo no esté disponible. Se conserva el acceso del pie de página.
+
 ## 0.16.0 (2026-11-23) — Personalización de la landing
 
 Requiere migración: no.
