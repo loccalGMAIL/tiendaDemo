@@ -3,6 +3,12 @@
         <h2 class="text-3xl font-bold">Contacto</h2>
 
         <dl class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            @if (trim($site['hours']) !== '')
+                <div>
+                    <dt class="text-sm font-medium opacity-60">Horarios de atención</dt>
+                    <dd class="mt-1 whitespace-pre-line">{{ $site['hours'] }}</dd>
+                </div>
+            @endif
             @if (trim($site['address']) !== '')
                 <div>
                     <dt class="text-sm font-medium opacity-60">Dirección</dt>

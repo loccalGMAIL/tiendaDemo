@@ -1,6 +1,6 @@
 <section id="hero" class="relative isolate overflow-hidden bg-night text-night-ink">
-    @if ($image = $appearance->assetUrl('hero'))
-        <img src="{{ $image }}" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover opacity-40">
+    @if ($image = $siteContent->imageUrl($site['hero_image']) ?? $appearance->assetUrl('hero'))
+        <img src="{{ $image }}" alt="{{ $site['hero_image_alt'] }}" fetchpriority="high" class="absolute inset-0 -z-10 h-full w-full object-cover opacity-40">
     @endif
 
     <div class="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 md:py-36">
@@ -10,12 +10,6 @@
             <p class="mx-auto mt-6 max-w-xl text-lg opacity-80">{{ $subtitle }}</p>
         @endif
 
-        @if ($whatsapp = $siteContent->whatsappUrl('Hola, quería hacer una consulta'))
-            <div class="mt-10 flex flex-wrap justify-center gap-4">
-                <a href="{{ $whatsapp }}" class="border border-night-ink/40 px-8 py-3 text-sm uppercase tracking-widest hover:border-brand hover:text-brand" rel="noopener">
-                    WhatsApp
-                </a>
-            </div>
-        @endif
+        @include('landings.partials.hero-actions')
     </div>
 </section>

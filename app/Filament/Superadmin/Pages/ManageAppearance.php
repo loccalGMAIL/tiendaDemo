@@ -5,6 +5,7 @@ namespace App\Filament\Superadmin\Pages;
 use App\Models\User;
 use App\Services\Appearance;
 use App\Services\ImageTrimmer;
+use App\Services\SiteContent;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -70,6 +71,15 @@ class ManageAppearance extends Page
         $themes = app(Appearance::class)->themes();
 
         return $schema->columns(1)->components([
+            Section::make('Estructura de la landing')
+                ->description('Elegí las secciones y arrastralas para ordenar el sitio. El cliente solo actualiza su contenido. Las secciones vacías y el catálogo sin módulo no se muestran.')
+                ->schema([
+                    Select::make('landing_sections')
+                        ->label('Secciones y orden')
+                        ->options(SiteContent::SECTIONS)
+                        ->multiple()
+                        ->reorderable(),
+                ]),
             Section::make('Tema')
                 ->description('Cambia todo el diseño de la landing y la tipografía y el logo del panel.')
                 ->schema([
@@ -149,6 +159,8 @@ class ManageAppearance extends Page
         $appearance = app(Appearance::class);
         $state = $this->form->getState();
 
+        app(SiteContent::class)->saveStructure($state['landing_sections'] ?? []);
+
         if ($state['theme'] !== $appearance->themeKey()) {
             $appearance->setTheme($state['theme']);
         }
@@ -190,6 +202,7 @@ class ManageAppearance extends Page
             'palette' => $appearance->paletteKey(),
             'mode' => $appearance->modeKey(),
             'assets' => [],
+            'landing_sections' => app(SiteContent::class)->sectionOrder(),
         ];
 
         foreach (Appearance::FILE_SLOTS as $slot) {

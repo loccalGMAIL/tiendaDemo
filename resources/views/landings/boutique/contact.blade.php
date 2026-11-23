@@ -4,6 +4,12 @@
         <div class="mx-auto mt-4 h-px w-16 bg-brand"></div>
 
         <dl class="mt-12 grid gap-8 sm:grid-cols-2">
+            @if (trim($site['hours']) !== '')
+                <div>
+                    <dt class="text-xs uppercase tracking-widest opacity-60">Horarios de atención</dt>
+                    <dd class="mt-2 whitespace-pre-line">{{ $site['hours'] }}</dd>
+                </div>
+            @endif
             @if (trim($site['address']) !== '')
                 <div>
                     <dt class="text-xs uppercase tracking-widest opacity-60">Dirección</dt>

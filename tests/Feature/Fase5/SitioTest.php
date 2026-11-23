@@ -27,7 +27,11 @@ it('sin configurar usa el nombre de la aplicación y no tiene contacto ni conten
         ->and($site->socials())->toBe([])
         ->and($site->whatsappUrl())->toBeNull()
         ->and($site->all()['value_items'])->toBe([])
-        ->and($site->all()['sections'])->toBe(['hero' => true, 'value' => true, 'catalog' => true, 'faq' => true, 'contact' => true]);
+        ->and($site->all()['sections'])->toBe([
+            'hero' => true, 'value' => true, 'catalog' => true,
+            'about' => true, 'services' => true, 'gallery' => true, 'banner' => true,
+            'faq' => true, 'contact' => true,
+        ]);
 });
 
 it('arma el enlace de WhatsApp con solo los dígitos y el mensaje codificado', function () {
@@ -101,19 +105,19 @@ it('guarda el contenido y se ve en la landing', function () {
         ->assertSee('¿Cambios?');
 });
 
-it('guarda qué secciones se muestran', function () {
+it('el cliente no puede modificar qué secciones se muestran', function () {
     $this->actingAs($this->admin);
 
     Livewire::test(SiteSettings::class)
-        ->fillForm(['sections' => ['hero' => true, 'value' => false, 'catalog' => false, 'faq' => true, 'contact' => false]])
+        ->set('data.sections', ['hero' => true, 'value' => false, 'catalog' => false, 'faq' => true, 'contact' => false])
         ->call('save')
         ->assertHasNoFormErrors();
 
     $site = app(SiteContent::class);
 
-    expect($site->sectionEnabled('value'))->toBeFalse()
+    expect($site->sectionEnabled('value'))->toBeTrue()
         ->and($site->sectionEnabled('hero'))->toBeTrue()
-        ->and($site->sectionEnabled('contact'))->toBeFalse();
+        ->and($site->sectionEnabled('contact'))->toBeTrue();
 });
 
 it('registra en la actividad solo lo que cambió, con antes y después', function () {
