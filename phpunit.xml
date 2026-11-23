@@ -33,6 +33,8 @@
         <env name="PANEL_DOMAIN" value="app.tiendademo.localhost"/>
         <env name="SUPERADMIN_DOMAIN" value="plataforma.tiendademo.localhost"/>
         <env name="TRUSTED_PROXIES" value="*"/>
+        <env name="GOOGLE_CLIENT_ID" value=""/>
+        <env name="GOOGLE_CLIENT_SECRET" value=""/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
