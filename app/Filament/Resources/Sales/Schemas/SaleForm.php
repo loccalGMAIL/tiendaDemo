@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Sales\Schemas;
 
 use App\Actions\Products\CreateProduct;
+use App\Actions\Sales\FindVariantByCode;
 use App\Enums\Module;
 use App\Facades\Modules;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
@@ -20,12 +21,15 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SaleForm
 {
@@ -71,6 +75,19 @@ class SaleForm
                 ]),
             Section::make('Productos')
                 ->schema([
+                    // Módulo Códigos de barras: el lector escribe el código y Enter.
+                    TextInput::make('scan')
+                        ->label('Escanear código')
+                        ->placeholder('Pasá el lector por la etiqueta')
+                        ->prefixIcon('heroicon-o-qr-code')
+                        ->dehydrated(false)
+                        ->autofocus()
+                        ->autocomplete(false)
+                        ->visible(fn (): bool => Modules::enabled(Module::Barcodes))
+                        ->extraInputAttributes([
+                            'x-on:keydown.enter.prevent' => "\$wire.set('data.scan', \$el.value).then(() => { \$el.value = ''; \$el.focus() })",
+                        ])
+                        ->afterStateUpdated(fn (mixed $state, Get $get, Set $set) => self::addScannedCode($state, $get, $set)),
                     Repeater::make('items')
                         ->hiddenLabel()
                         ->minItems(1)
@@ -441,6 +458,49 @@ class SaleForm
                 $variant->getKey() => $variant->fullName().' · '.($variant->sku ?? $variant->product->sku).($withStock ? ' · stock '.$variant->stock : ''),
             ])
             ->all();
+    }
+
+    /**
+     * Agrega a la venta la variante del código leído: si ya está, suma una unidad; si no,
+     * la agrega con su precio (reemplazando la fila vacía que trae el formulario).
+     */
+    public static function addScannedCode(mixed $state, Get $get, Set $set): void
+    {
+        $set('scan', null);
+
+        $code = trim((string) $state);
+
+        if ($code === '') {
+            return;
+        }
+
+        try {
+            $variant = app(FindVariantByCode::class)->handle($code);
+        } catch (ValidationException $e) {
+            Notification::make()->title($e->validator->errors()->first())->danger()->send();
+
+            return;
+        }
+
+        $items = (array) ($get('items') ?? []);
+
+        foreach ($items as $key => $item) {
+            if ((int) ($item['variant_id'] ?? 0) === $variant->getKey()) {
+                $items[$key]['quantity'] = max(0, (int) ($item['quantity'] ?? 0)) + 1;
+                $set('items', $items);
+
+                return;
+            }
+        }
+
+        $items = array_filter($items, fn (mixed $item): bool => filled($item['variant_id'] ?? null));
+        $items[(string) Str::uuid()] = [
+            'variant_id' => $variant->getKey(),
+            'quantity' => 1,
+            'unit_price' => $variant->effectivePrice(),
+        ];
+
+        $set('items', $items);
     }
 
     /**

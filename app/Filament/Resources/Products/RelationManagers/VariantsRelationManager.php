@@ -7,9 +7,11 @@ use App\Actions\Variants\GenerateVariants;
 use App\Enums\Module;
 use App\Facades\Modules;
 use App\Filament\Concerns\RelationManagerBelongsToModule;
+use App\Filament\Pages\BarcodeLabels;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Rules\PrintableSku;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -61,7 +63,10 @@ class VariantsRelationManager extends RelationManager
             TextInput::make('sku')
                 ->label('SKU')
                 ->maxLength(255)
-                ->unique(ProductVariant::class, 'sku', ignoreRecord: true),
+                ->unique(ProductVariant::class, 'sku', ignoreRecord: true)
+                ->rules([PrintableSku::forVariant()])
+                ->placeholder('Automático')
+                ->helperText('Es el código de barras de la etiqueta. Vacío se asigna solo (PROD-00001-01…).'),
             TextInput::make('price')
                 ->label('Precio propio')
                 ->numeric()
@@ -115,6 +120,7 @@ class VariantsRelationManager extends RelationManager
             ->defaultSort('position')
             ->headerActions([
                 $this->generateAction(),
+                $this->printLabelsAction(),
                 CreateAction::make(),
             ])
             ->recordActions([
@@ -122,6 +128,19 @@ class VariantsRelationManager extends RelationManager
                 $this->adjustStockAction(),
                 DeleteAction::make(),
             ]);
+    }
+
+    /**
+     * Abre las etiquetas con una de cada variante del producto (módulo Códigos de barras).
+     */
+    private function printLabelsAction(): Action
+    {
+        return Action::make('printLabels')
+            ->label('Imprimir etiquetas')
+            ->icon(Heroicon::OutlinedQrCode)
+            ->color('gray')
+            ->visible(fn (): bool => BarcodeLabels::canAccess())
+            ->url(fn (): string => BarcodeLabels::urlFor(BarcodeLabels::selectionForProducts([$this->productOwner()])));
     }
 
     /**

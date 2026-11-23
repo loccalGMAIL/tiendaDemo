@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleLoginController;
+use App\Http\Controllers\BarcodeLabelsPrintController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PurchaseOrderPrintController;
@@ -38,6 +39,12 @@ Route::domain(config('domains.panel'))
     ->get('/compras/ordenes/{order}/imprimir', PurchaseOrderPrintController::class)
     ->whereNumber('order')
     ->name('purchase-orders.print');
+
+// Etiquetas con código de barras (módulo Códigos de barras): con el módulo apagado responde 404; solo administradores.
+Route::domain(config('domains.panel'))
+    ->middleware('module:barcodes')
+    ->get('/etiquetas/imprimir', BarcodeLabelsPrintController::class)
+    ->name('barcode-labels.print');
 
 // Informes imprimibles: con el módulo apagado responden 404; solo para administradores.
 Route::domain(config('domains.panel'))

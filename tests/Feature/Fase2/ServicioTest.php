@@ -158,7 +158,7 @@ it('enableAll enciende en orden de dependencia y omite lo que no se puede', func
     $result = Modules::enableAll();
 
     expect(array_map(fn (Module $m) => $m->value, $result['enabled']))->toBe([
-        'current-account', 'installments', 'variants', 'purchases', 'stock', 'reports', 'catalog', 'custom-colors',
+        'current-account', 'installments', 'variants', 'purchases', 'stock', 'reports', 'catalog', 'custom-colors', 'barcodes',
     ])
         ->and(array_keys($result['skipped']))->toBe(['google-login'])
         ->and(Modules::enabled(Module::Installments))->toBeTrue()

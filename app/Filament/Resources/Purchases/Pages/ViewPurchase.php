@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Purchases\Pages;
 
 use App\Actions\Purchases\CancelPurchase;
+use App\Filament\Pages\BarcodeLabels;
 use App\Filament\Resources\Purchases\PurchaseResource;
 use App\Models\Purchase;
 use App\Models\User;
@@ -27,6 +28,19 @@ class ViewPurchase extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Módulo Códigos de barras: una etiqueta por cada prenda que llegó.
+            Action::make('printLabels')
+                ->label('Etiquetas de lo recibido')
+                ->icon(Heroicon::OutlinedQrCode)
+                ->color('gray')
+                ->visible(fn (Purchase $record): bool => BarcodeLabels::canAccess() && ! $record->isCancelled())
+                ->url(fn (Purchase $record): string => BarcodeLabels::urlFor(
+                    $record->items
+                        ->where('quantity', '>', 0)
+                        ->groupBy('product_variant_id')
+                        ->map(fn ($items): int => (int) $items->sum('quantity'))
+                        ->all(),
+                )),
             Action::make('cancel')
                 ->label('Anular factura')
                 ->icon(Heroicon::XCircle)
