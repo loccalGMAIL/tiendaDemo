@@ -1,5 +1,5 @@
 <header class="sticky top-0 z-10 border-b border-ink/10 bg-surface/90 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <a href="{{ url('/') }}" class="flex min-w-0 items-center gap-2 text-lg font-semibold">
             @php
                 $lightLogo = $appearance->logoUrl('light');
@@ -26,11 +26,13 @@
             @endforeach
         </nav>
 
-        {{-- Siempre a la vista, también en el celular: el catálogo es el botón principal. --}}
-        <div class="flex shrink-0 items-center gap-2 text-sm font-medium">
+        {{-- Ambos accesos quedan a la vista también en el celular; el catálogo sigue siendo el principal. --}}
+        <div class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 text-sm font-medium">
             @if ($hasCatalog)
                 <a href="{{ url('/catalogo') }}" class="rounded-full bg-brand px-4 py-2 text-on-brand shadow-sm hover:opacity-90">Catálogo</a>
             @endif
+
+            <a href="{{ $panelUrl }}" class="rounded-full border border-ink/20 px-4 py-2 hover:bg-accent/10">Ingresar</a>
 
             @include('landings.partials.mobile-navigation')
         </div>

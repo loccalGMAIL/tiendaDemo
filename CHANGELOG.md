@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.1 (2026-11-23) — Ajustes de navegación
+
+Requiere migración: no.
+
+- **Pestañas del sitio**: todas las secciones habilitadas quedan visibles en varias filas según el ancho disponible, sin desplazamiento horizontal. El ajuste se limita al editor del sitio.
+- **Ingreso al sistema**: se restaura el botón «Ingresar» junto a «Catálogo» en el encabezado de ambos temas, también en celulares y aunque el catálogo no esté disponible. Se conserva el acceso del pie de página.
+
 ## 0.16.0 (2026-11-23) — Personalización de la landing
 
 Requiere migración: no.
