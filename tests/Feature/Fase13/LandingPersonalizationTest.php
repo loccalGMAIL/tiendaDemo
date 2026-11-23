@@ -86,6 +86,37 @@ it('prioriza el catálogo solo cuando hay productos públicos', function (string
     $this->get($this->url)->assertOk()->assertDontSee('Ver catálogo')->assertSee('Escribinos por WhatsApp');
 })->with(['clasico', 'boutique']);
 
+it('mantiene Ingresar en el encabezado y el pie con o sin catálogo', function (string $theme, bool $withCatalog) {
+    app(Appearance::class)->setTheme($theme);
+
+    if ($withCatalog) {
+        Modules::enable(Module::Catalog);
+        Product::factory()->create(['is_published' => true]);
+    }
+
+    $response = $this->get($this->url)->assertOk();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    $headerLinks = $xpath->query('//header//a[normalize-space()="Ingresar"]');
+    $footerLinks = $xpath->query('//footer//a[normalize-space()="Ingresar al sistema"]');
+
+    expect($headerLinks)->toHaveCount(1);
+    expect($headerLinks->item(0)->getAttribute('href'))->toBe('http://'.config('domains.panel'));
+    expect($footerLinks)->toHaveCount(1);
+    expect($footerLinks->item(0)->getAttribute('href'))->toBe('http://'.config('domains.panel'));
+    expect($xpath->query('//header//a[normalize-space()="Catálogo"]'))->toHaveCount($withCatalog ? 1 : 0);
+})->with(['clasico', 'boutique'])->with([false, true]);
+
+it('conserva esquema y puerto en el botón de ingreso', function (string $theme) {
+    app(Appearance::class)->setTheme($theme);
+
+    $this->get('https://'.config('domains.landing').':8443/')
+        ->assertOk()
+        ->assertSee('href="https://'.config('domains.panel').':8443"', false)
+        ->assertSee('>Ingresar</a>', false);
+})->with(['clasico', 'boutique']);
+
 it('usa fotografías de contenido y omite archivos inexistentes o rutas ajenas', function (string $theme) {
     Storage::fake('public');
     Storage::disk('public')->put('site/portada.jpg', 'image');

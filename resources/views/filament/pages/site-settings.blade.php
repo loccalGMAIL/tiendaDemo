@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="grid min-w-0 gap-6 xl:grid-cols-2">
-        <div class="min-w-0">
+        <div class="site-settings-editor min-w-0">
             {{ $this->content }}
         </div>
 

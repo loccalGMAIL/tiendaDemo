@@ -24,3 +24,11 @@
 .fi-ta-cell .fi-ta-col > * {
     padding-block: 0.25rem;
 }
+
+.site-settings-editor .fi-sc-tabs > .fi-tabs {
+    @apply flex-wrap gap-y-1 overflow-visible;
+}
+
+.site-settings-editor .fi-sc-tabs > .fi-tabs .fi-tabs-item {
+    @apply max-w-full whitespace-normal;
+}
