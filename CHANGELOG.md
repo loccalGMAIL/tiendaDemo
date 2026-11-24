@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.17.0 (2026-11-23) — Códigos de barras
+
+Requiere migración: no (el código es el SKU, que ya existía).
+
+- **Módulo Códigos de barras**: etiquetas autoadhesivas con código de barras **Code 128** (encoder propio, sin dependencias) y venta con lector. Sin el módulo no aparece nada y las rutas responden 404.
+- **El código es el SKU**: el de la variante, o el del producto si es la variante implícita. Una variante con nombre sin SKU lo recibe sola al crearse (`PROD-00012-01`, `-02`…). Para las que ya existían: botón «Completar los SKU que faltan» en Etiquetas o `php artisan barcodes:fill-skus`.
+- **El SKU tiene que poder imprimirse** (ASCII sin tildes) y **no puede repetirse entre un producto y una variante** (si no, el lector no sabría cuál es). Se valida siempre, con o sin el módulo.
+- **Etiquetas** (Catálogo → Etiquetas, solo administrador): cantidad por variante, «1 de cada una», «Cantidad = stock» (con Stock), «Empezar en la etiqueta N.º» para reutilizar una hoja ya empezada. Imprime en otra pestaña (`/etiquetas/imprimir`). También se llega con la selección ya cargada desde la acción masiva «Imprimir etiquetas» de Productos, desde las variantes de un producto y desde una factura de compra («Etiquetas de lo recibido»).
+- **Formato configurable desde el panel de la plataforma**: plantillas (rollo 50×25, 40×30, 60×40, hoja A4 3×8 y 4×10) o medidas propias: rollo o hoja (A4/Carta), tamaño, columnas, filas, márgenes y separaciones; precio y nombre del negocio opcionales. Por defecto, rollo de 50×25 mm con precio.
+- **Venta con lector**: en «Nueva venta», el campo «Escanear código» (con foco al abrir) agrega la variante con su precio, o suma una unidad si ya estaba. Un código desconocido, el de un producto que tiene variantes o el de un producto inactivo avisan sin tocar la venta.
+- Para imprimir: elegir en el diálogo la impresora de etiquetas, el tamaño de papel de la etiqueta, escala 100 % y sin márgenes. El lector tiene que usar la **misma distribución de teclado** que la PC (si no, el `-` del SKU llega cambiado).
+- Con etiquetas de 50 mm conviene SKU de hasta unos 12 caracteres para que las barras no queden demasiado finas; con SKU más largos, usar una etiqueta más ancha.
+- **Dashboard**: junto a «Nueva venta» hay accesos a **«Nueva compra»** (administrador, con el módulo Compras) y **«Etiquetas»** (administrador, con el módulo Códigos de barras).
+- **Menú del panel reordenado**: Ventas, Catálogo, Compras, Informes y Configuración.
+- **Landing en el celular**: el menú de secciones es el ícono de hamburguesa clásico (pasa a «X» al abrirse), en lugar de la palabra «Menú».
+
 ## 0.16.1 (2026-11-23) — Ajustes de navegación
 
 Requiere migración: no.

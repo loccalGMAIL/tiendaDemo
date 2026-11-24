@@ -45,6 +45,19 @@ it('muestra los bloques comerciales sin catálogo en ambos temas', function (str
         ->assertSee('<summary', false);
 })->with(['clasico', 'boutique']);
 
+it('el menú del celular es el ícono hamburguesa, sin la palabra «Menú»', function (string $theme) {
+    app(Appearance::class)->setTheme($theme);
+    $site = app(SiteContent::class);
+    $site->save(['about_text' => 'Trabajamos desde 1980.']);
+    $site->saveStructure(['hero', 'about']);
+
+    $this->get($this->url)
+        ->assertOk()
+        ->assertSee('aria-label="Menú de secciones"', false)
+        ->assertSee('M4 6h16M4 12h16M4 18h16', false)
+        ->assertDontSee('>Menú</summary>', false);
+})->with(['clasico', 'boutique']);
+
 it('solo muestra secciones configuradas y conserva el contenido al ocultarlas', function () {
     $site = app(SiteContent::class);
     $site->save(['about_text' => 'Nuestra historia']);

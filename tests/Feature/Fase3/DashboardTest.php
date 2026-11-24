@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use App\Filament\Widgets\LatestSales;
 use App\Filament\Widgets\SalesOverview;
 use App\Models\Payment;
@@ -162,3 +164,54 @@ it('el escritorio ofrece Nueva venta con enlace al formulario', function (string
         ->assertSee('Últimas ventas')
         ->assertDontSee('Documentación');
 })->with(['admin', 'seller']);
+
+it('el escritorio ofrece Nueva compra y Etiquetas al administrador con sus módulos encendidos', function () {
+    $this->withoutVite();
+    resetModules();
+    Modules::enable(Module::Purchases);
+    Modules::enable(Module::Barcodes);
+
+    $this->actingAs($this->admin)
+        ->get('http://'.config('domains.panel').'/')
+        ->assertOk()
+        ->assertSee('Nueva compra')
+        ->assertSee('/purchases/create')
+        ->assertSee('Etiquetas')
+        ->assertSee('/barcode-labels');
+});
+
+it('el escritorio no ofrece Nueva compra ni Etiquetas sin sus módulos ni al vendedor', function () {
+    $this->withoutVite();
+    resetModules();
+
+    $this->actingAs($this->admin)
+        ->get('http://'.config('domains.panel').'/')
+        ->assertOk()
+        ->assertDontSee('Nueva compra')
+        ->assertDontSee('/barcode-labels');
+
+    Modules::enable(Module::Purchases);
+    Modules::enable(Module::Barcodes);
+
+    $this->actingAs($this->seller)
+        ->get('http://'.config('domains.panel').'/')
+        ->assertOk()
+        ->assertSee('Nueva venta')
+        ->assertDontSee('Nueva compra')
+        ->assertDontSee('/barcode-labels');
+});
+
+it('el menú del panel ordena los grupos: Ventas, Catálogo, Compras, Informes y Configuración', function () {
+    resetModules();
+    Modules::enableAll();
+
+    $this->actingAs($this->admin);
+
+    $labels = collect(Filament::getNavigation())
+        ->map(fn ($group): ?string => $group->getLabel())
+        ->filter()
+        ->values()
+        ->all();
+
+    expect($labels)->toBe(['Ventas', 'Catálogo', 'Compras', 'Informes', 'Configuración']);
+});

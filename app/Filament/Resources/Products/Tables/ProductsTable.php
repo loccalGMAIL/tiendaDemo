@@ -4,17 +4,22 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Enums\Module;
 use App\Facades\Modules;
+use App\Filament\Pages\BarcodeLabels;
 use App\Models\Category;
 use App\Models\Supplier;
 use App\Models\User;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductsTable
 {
@@ -89,6 +94,19 @@ class ProductsTable
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
+            ])
+            ->toolbarActions([
+                // Módulo Códigos de barras: abre las etiquetas con una de cada variante de lo elegido.
+                BulkActionGroup::make([
+                    BulkAction::make('printLabels')
+                        ->label('Imprimir etiquetas')
+                        ->icon(Heroicon::OutlinedQrCode)
+                        ->visible(fn (): bool => BarcodeLabels::canAccess())
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => redirect()->to(
+                            BarcodeLabels::urlFor(BarcodeLabels::selectionForProducts($records)),
+                        )),
+                ]),
             ]);
     }
 }

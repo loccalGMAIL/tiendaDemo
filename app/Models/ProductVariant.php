@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * El stock no es asignable en masa: solo cambia por movimientos (ventas, ajustes, compras).
@@ -35,6 +36,50 @@ class ProductVariant extends Model
             'active' => 'boolean',
             'position' => 'integer',
         ];
+    }
+
+    /**
+     * Toda variante con nombre nace con SKU (y por lo tanto con código de barras):
+     * si no trae uno, toma el del producto con un sufijo (PROD-00012-01, -02…).
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $variant): void {
+            if ((string) $variant->name !== '' && blank($variant->sku)) {
+                $variant->sku = self::nextSkuFor($variant->product_id);
+            }
+        });
+    }
+
+    /**
+     * SKU libre siguiente para una variante del producto.
+     */
+    public static function nextSkuFor(int $productId): string
+    {
+        return DB::transaction(function () use ($productId): string {
+            $base = (string) Product::query()->whereKey($productId)->lockForUpdate()->value('sku');
+            $number = self::query()->where('product_id', $productId)->where('sku', 'like', $base.'-%')->count() + 1;
+
+            do {
+                $sku = $base.'-'.str_pad((string) $number, 2, '0', STR_PAD_LEFT);
+                $number++;
+            } while (self::query()->where('sku', $sku)->exists() || Product::query()->where('sku', $sku)->exists());
+
+            return $sku;
+        });
+    }
+
+    /**
+     * Código que se imprime en la etiqueta y lee el lector: el SKU de la variante, o el del
+     * producto si es la implícita. Null si es una variante con nombre todavía sin SKU.
+     */
+    public function barcode(): ?string
+    {
+        if ($this->isImplicit()) {
+            return $this->product->sku;
+        }
+
+        return filled($this->sku) ? $this->sku : null;
     }
 
     /**

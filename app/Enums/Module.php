@@ -19,6 +19,7 @@ enum Module: string implements HasLabel
     case Catalog = 'catalog';
     case GoogleLogin = 'google-login';
     case CustomColors = 'custom-colors';
+    case Barcodes = 'barcodes';
 
     public function getLabel(): string
     {
@@ -32,6 +33,7 @@ enum Module: string implements HasLabel
             self::Catalog => 'Catálogo web',
             self::GoogleLogin => 'Login con Google',
             self::CustomColors => 'Colores personalizables',
+            self::Barcodes => 'Códigos de barras',
         };
     }
 
@@ -47,6 +49,7 @@ enum Module: string implements HasLabel
             self::Catalog => 'Catálogo público en la landing con los productos del panel.',
             self::GoogleLogin => 'Botón «Ingresar con Google» en el login del panel.',
             self::CustomColors => 'El administrador del cliente elige la combinación de colores.',
+            self::Barcodes => 'Etiquetas con código de barras (el SKU) para imprimir y venta con lector de códigos.',
         };
     }
 
@@ -101,6 +104,21 @@ enum Module: string implements HasLabel
             self::Variants => ['attributes' => []],
             self::Installments => ['due_rule' => 'fixed_day', 'fixed_day' => 10],
             self::Catalog => ['show_sold_out' => true],
+            self::Barcodes => [
+                'preset' => 'roll_50x25',
+                'format' => 'roll',
+                'paper' => 'A4',
+                'label_width' => 50,
+                'label_height' => 25,
+                'columns' => 1,
+                'rows' => 1,
+                'margin_top' => 0,
+                'margin_left' => 0,
+                'gap_x' => 0,
+                'gap_y' => 0,
+                'show_price' => true,
+                'show_business' => false,
+            ],
             default => [],
         };
     }

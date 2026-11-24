@@ -7,6 +7,7 @@ use App\Facades\Modules;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Rules\PrintableSku;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -93,6 +94,7 @@ class ProductForm
                 ->label('SKU')
                 ->maxLength(255)
                 ->unique(Product::class, 'sku', ignoreRecord: true)
+                ->rules([PrintableSku::forProduct()])
                 ->placeholder('Automático')
                 ->helperText('Si lo dejás vacío se asigna PROD-00001, PROD-00002…'),
             TextInput::make('name')
