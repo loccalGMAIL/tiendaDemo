@@ -245,7 +245,7 @@ class VariantsRelationManager extends RelationManager
         }
 
         return $fields === []
-            ? [Text::make('Todavía no hay atributos configurados. Se cargan desde el panel de la plataforma (Módulos → Variantes).')]
+            ? [Text::make('Todavía no hay atributos configurados. Se cargan en Catálogo → Atributos.')]
             : $fields;
     }
 

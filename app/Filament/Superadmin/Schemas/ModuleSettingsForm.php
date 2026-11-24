@@ -46,24 +46,7 @@ class ModuleSettingsForm
                         return 'Conviene dejarlo en «Avisar» hasta terminar el primer recuento de stock.';
                     }),
             ],
-            Module::Variants => [
-                Repeater::make('attributes')
-                    ->label('Atributos que usa el negocio')
-                    ->addActionLabel('Agregar atributo')
-                    ->defaultItems(0)
-                    ->schema([
-                        TextInput::make('name')
-                            ->label('Atributo')
-                            ->placeholder('Talle')
-                            ->required()
-                            ->maxLength(50),
-                        TagsInput::make('values')
-                            ->label('Valores posibles')
-                            ->placeholder('S, M, L')
-                            ->required(),
-                    ])
-                    ->columns(2),
-            ],
+            Module::Variants => [self::variantAttributesRepeater()],
             Module::Installments => [
                 Select::make('due_rule')
                     ->label('Vencimiento de las cuotas')
@@ -92,6 +75,34 @@ class ModuleSettingsForm
             Module::Barcodes => self::barcodeFields(),
             default => [],
         };
+    }
+
+    /**
+     * Atributos de las variantes (talle, color…) con sus valores posibles. Lo usan el panel
+     * de la plataforma y la página Catálogo → Atributos del administrador.
+     */
+    public static function variantAttributesRepeater(): Repeater
+    {
+        return Repeater::make('attributes')
+            ->label('Atributos que usa el negocio')
+            ->addActionLabel('Agregar atributo')
+            ->defaultItems(0)
+            ->reorderable()
+            ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null) ? $state['name'] : null)
+            ->schema([
+                TextInput::make('name')
+                    ->label('Atributo')
+                    ->placeholder('Talle')
+                    ->required()
+                    ->distinct()
+                    ->maxLength(50),
+                TagsInput::make('values')
+                    ->label('Valores posibles')
+                    ->placeholder('S, M, L')
+                    ->reorderable()
+                    ->required(),
+            ])
+            ->columns(2);
     }
 
     /**

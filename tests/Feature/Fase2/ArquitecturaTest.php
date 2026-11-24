@@ -7,6 +7,7 @@ use App\Filament\Pages\ColorSettings;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SiteSettings;
 use App\Filament\Pages\StockCount;
+use App\Filament\Pages\VariantAttributes;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Customers\CustomerResource;
@@ -97,6 +98,7 @@ it('encuentra los recursos del núcleo y los de los módulos (la prueba no es va
         StockOverview::class,
         LowStockTable::class,
         VariantsRelationManager::class,
+        VariantAttributes::class,
     );
 });
 
