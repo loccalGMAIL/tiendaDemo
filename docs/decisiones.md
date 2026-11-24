@@ -135,6 +135,18 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **La matriz de autorización es la red de seguridad**: toda ruta nueva tiene que declarar quién entra, o la prueba falla.
 - **Mutation testing pendiente**: hace falta un driver de cobertura (xdebug o pcov) que este PHP no tiene.
 
+## Decisiones de diseño (Caja, 0.19.0)
+
+- **La Caja es del núcleo**, no un módulo: toda instalación vende en el mostrador. El control de caja (turnos, arqueo y cierre) será un módulo aparte, porque no todos los negocios lo necesitan.
+- **Conviven la Caja y «Nueva venta»**: la Caja es para el mostrador (teclado y lector, sin fecha ni vendedor para elegir); el formulario queda para lo que se cierra a distancia y para cargas con otra fecha o vendedor.
+- **Misma acción que el formulario** (`CreateSale`): las reglas de la venta, los eventos (stock, cuenta corriente) y los errores son los mismos. La Caja solo arma el pedido.
+- **El ticket guarda variante y cantidad**; descripción, precio y existencia se leen del catálogo en cada pantalla. Así no se pueden alterar desde el navegador y un cambio de precio se ve antes de cobrar.
+- **El campo único no usa `wire:model`**: el valor se toma y se limpia en el navegador antes de mandarlo, para que una respuesta del servidor no borre lo que el lector está escribiendo.
+- **Primero el código exacto, después el texto**: el SKU de la etiqueta gana; si no es un código vendible (por ejemplo, el de un producto con variantes) se busca por texto y se ofrecen sus variantes.
+- **«Paga con» aplica al último medio de pago**: con un solo medio es el de toda la venta; con el pago dividido, el último es el que cubre lo que falta, que es el que suele pagarse en efectivo. El vuelto no se guarda todavía: llegará con el control de caja.
+- **Canal de venta en la venta** (`sales.channel`, Mostrador u Online). Las ventas anteriores quedan como Mostrador. Prepara el control de caja (solo el mostrador pasa por el cajón) y el futuro carrito del catálogo, que creará ventas online.
+- **El vendedor entra a la Caja** con un `LoginResponse` propio (también lo usa el login con Google). Si venía de una página puntual, vuelve a esa.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

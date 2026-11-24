@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\SaleChannel;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\User;
@@ -22,6 +23,7 @@ class SaleFactory extends Factory
     {
         return [
             'seller_id' => User::factory()->seller(),
+            'channel' => SaleChannel::Counter,
             'date' => now()->toDateString(),
             'subtotal' => '1000.00',
             'adjustment' => '0.00',
@@ -41,6 +43,11 @@ class SaleFactory extends Factory
             'total_cost' => $cost,
             'down_payment' => $total,
         ]);
+    }
+
+    public function online(): static
+    {
+        return $this->state(fn () => ['channel' => SaleChannel::Online]);
     }
 
     public function cancelled(): static

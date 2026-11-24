@@ -32,3 +32,10 @@
 .site-settings-editor .fi-sc-tabs > .fi-tabs .fi-tabs-item {
     @apply max-w-full whitespace-normal;
 }
+
+/*
+ * Caja: teclas de los atajos.
+ */
+.pos-kbd {
+    @apply inline-flex min-w-5 items-center justify-center rounded bg-gray-100 px-1 font-mono text-[0.7rem] font-semibold text-gray-700 ring-1 ring-gray-950/10 dark:bg-white/10 dark:text-gray-200 dark:ring-white/10;
+}

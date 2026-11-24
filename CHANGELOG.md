@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.19.0 (2026-11-24) — Caja y canal de venta
+
+Requiere migración: sí (`sales.channel`; las ventas que ya existían quedan como Mostrador).
+
+- **Caja** (Ventas → Caja, también desde el escritorio): pantalla de venta de mostrador pensada para **teclado y lector de códigos**. Administradores y vendedores; **el vendedor entra directo a la Caja** al ingresar (también con Google).
+- **Un solo campo** recibe el código de la etiqueta, el SKU o parte del nombre, y se agrega con Enter. Con un código exacto o un único resultado se agrega solo; con varios se elige con ↑ ↓ y Enter. **`3*CODIGO`** suma tres unidades. Un código repetido suma una unidad a la línea.
+- **Ticket** con cantidades editables (+ y − en pantalla o con el teclado sobre la línea elegida, Supr para quitarla), existencia a la vista con el módulo Stock y el **total siempre visible**. El precio sale siempre del catálogo: la Caja no lo manda ni lo deja cambiar.
+- **Ventana de cobro (F12)**: un botón por medio de pago, con su recargo o descuento, que también se elige con la tecla del número. **«Paga con» y vuelto** en pantalla, con montos rápidos (el exacto y los billetes que alcanzan); si lo entregado no alcanza, la venta no se confirma. **Pago dividido**: cada medio cubre una parte y el último cubre lo que falta. Con Cuenta corriente, **saldo a cuenta** del cliente con vencimiento o, con Cuotas propias, plan de pago.
+- **Cliente (F4)**: búsqueda con alta rápida; por defecto, Consumidor final.
+- Al confirmar, la venta queda con canal **Mostrador**, fecha de hoy y el usuario como vendedor; se ve la última venta con su vuelto y el ticket queda vacío para el siguiente cliente. Si el foco se pierde, lo que llega del lector vuelve solo al campo.
+- **Canal de venta**: cada venta es de **Mostrador** u **Online**. «Nueva venta» queda para lo que se cierra a distancia (WhatsApp, redes) y propone Online. El listado de ventas y el informe «Ventas y ganancia» filtran por canal, y el informe suma el agrupamiento «Por canal».
+- El menú lateral del panel se puede achicar a íconos; la Caja lo achica al entrar para dejarle lugar al ticket.
+- Nuevos: página `PointOfSale`, servicio `Tender` (vuelto y montos rápidos), enum `SaleChannel`, `App\Http\Responses\LoginResponse`.
+- Próximas versiones: ticket imprimible configurable, control de caja (cajas, turnos, arqueo y cierre) como módulo, ventas en espera y cobros de cuenta corriente desde la Caja.
+
 ## 0.18.0 (2026-11-24) — Atributos de las variantes
 
 Requiere migración: no (los atributos ya se guardaban en los ajustes del módulo Variantes).

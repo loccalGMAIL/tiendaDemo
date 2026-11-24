@@ -36,9 +36,13 @@ class SaleInfolist
                         ->placeholder('Consumidor final'),
                     TextEntry::make('seller.name')
                         ->label('Vendedor'),
+                    TextEntry::make('channel')
+                        ->label('Canal')
+                        ->badge(),
                     TextEntry::make('notes')
                         ->label('Notas')
-                        ->placeholder('—'),
+                        ->placeholder('—')
+                        ->columnSpanFull(),
                 ]),
             Section::make('Anulación')
                 ->columns(3)

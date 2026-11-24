@@ -37,7 +37,7 @@ const ACCESO_PLATAFORMA = ['superadmin'];
  */
 function declaredAccess(): array
 {
-    $panelStaff = ['/', '/profile', '/customers', '/customers/create', '/customers/{record}', '/payments', '/payments/create', '/products', '/sales', '/sales/create'];
+    $panelStaff = ['/', '/profile', '/customers', '/customers/create', '/customers/{record}', '/payments', '/payments/create', '/products', '/sales', '/sales/create', '/caja'];
     $panelAdmin = [
         '/color-settings', '/informe-saldos', '/informe-cobranza', '/informe-cobros', '/informe-compras', '/informe-ventas',
         '/site-settings', '/stock-count', '/stock-movements', '/activity-logs', '/activity-logs/{record}',

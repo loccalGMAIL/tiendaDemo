@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Sales\Schemas;
 use App\Actions\Products\CreateProduct;
 use App\Actions\Sales\FindVariantByCode;
 use App\Enums\Module;
+use App\Enums\SaleChannel;
 use App\Facades\Modules;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Products\Schemas\ProductForm;
@@ -65,6 +66,14 @@ class SaleForm
                         ->native(false)
                         // Un vendedor siempre carga a su nombre.
                         ->disabled(fn (): bool => self::currentUser()?->isSeller() ?? false),
+                    // El mostrador tiene su pantalla (la Caja): este formulario es para lo que se
+                    // cierra a distancia, como las ventas por WhatsApp.
+                    Select::make('channel')
+                        ->label('Canal')
+                        ->options(SaleChannel::class)
+                        ->default(SaleChannel::Online->value)
+                        ->required()
+                        ->native(false),
                     DatePicker::make('date')
                         ->label('Fecha')
                         ->default(fn (): string => now()->toDateString())

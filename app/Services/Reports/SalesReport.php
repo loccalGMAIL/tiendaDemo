@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Enums\SaleChannel;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Services\Money;
@@ -17,16 +18,17 @@ use Illuminate\Support\Collection;
  */
 class SalesReport extends Report
 {
-    public const GROUPS = ['detail' => 'Detalle', 'seller' => 'Por vendedor', 'product' => 'Por producto'];
+    public const GROUPS = ['detail' => 'Detalle', 'seller' => 'Por vendedor', 'channel' => 'Por canal', 'product' => 'Por producto'];
 
     /**
-     * @param  array<string, mixed>  $filters  from, to, seller_id, group
+     * @param  array<string, mixed>  $filters  from, to, seller_id, channel, group
      * @return Result
      */
     public function run(array $filters): array
     {
         [$from, $to] = $this->period($filters);
         $sellerId = $this->id($filters['seller_id'] ?? null);
+        $channel = SaleChannel::tryFrom((string) ($filters['channel'] ?? ''));
         $group = array_key_exists((string) ($filters['group'] ?? ''), self::GROUPS) ? (string) $filters['group'] : 'detail';
 
         $sales = Sale::query()
@@ -34,12 +36,14 @@ class SalesReport extends Report
             ->notCancelled()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->when($sellerId, fn ($query, int $id) => $query->where('seller_id', $id))
+            ->when($channel, fn ($query, SaleChannel $channel) => $query->where('channel', $channel->value))
             ->orderBy('date')
             ->orderBy('id')
             ->get();
 
         return match ($group) {
             'seller' => $this->bySeller($sales),
+            'channel' => $this->byChannel($sales),
             'product' => $this->byProduct($sales),
             default => $this->detail($sales),
         };
@@ -94,6 +98,38 @@ class SalesReport extends Report
             'group' => 'seller',
             'columns' => [
                 ['key' => 'label', 'label' => 'Vendedor', 'kind' => 'text'],
+                ['key' => 'count', 'label' => 'Ventas', 'kind' => 'number'],
+                ...$this->amountColumns(),
+            ],
+            'rows' => $rows,
+            'totals' => ['label' => 'Total', 'count' => (string) $sales->count(), ...$this->totals($sales)],
+        ];
+    }
+
+    /**
+     * Mostrador contra online, en el orden del enum.
+     *
+     * @param  Collection<int, Sale>  $sales
+     * @return Result
+     */
+    private function byChannel(Collection $sales): array
+    {
+        $rows = [];
+
+        foreach (SaleChannel::cases() as $channel) {
+            $group = $sales->filter(fn (Sale $sale): bool => $sale->channel === $channel);
+
+            if ($group->isEmpty()) {
+                continue;
+            }
+
+            $rows[] = ['label' => $channel->getLabel(), 'count' => (string) $group->count(), ...$this->totals($group)];
+        }
+
+        return [
+            'group' => 'channel',
+            'columns' => [
+                ['key' => 'label', 'label' => 'Canal', 'kind' => 'text'],
                 ['key' => 'count', 'label' => 'Ventas', 'kind' => 'number'],
                 ...$this->amountColumns(),
             ],

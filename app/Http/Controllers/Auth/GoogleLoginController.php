@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Actions\Auth\FindUserForGoogleLogin;
 use App\Enums\ActivityEvent;
 use App\Http\Controllers\Controller;
+use App\Http\Responses\LoginResponse;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use Filament\Facades\Filament;
@@ -53,7 +54,7 @@ class GoogleLoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(Filament::getPanel('admin')->getUrl());
+        return redirect()->intended(LoginResponse::homeFor($user));
     }
 
     /**

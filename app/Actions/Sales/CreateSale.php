@@ -4,6 +4,7 @@ namespace App\Actions\Sales;
 
 use App\Enums\ActivityEvent;
 use App\Enums\Module;
+use App\Enums\SaleChannel;
 use App\Enums\SaleStatus;
 use App\Events\SaleCreated;
 use App\Facades\Modules;
@@ -39,6 +40,7 @@ class CreateSale
     /**
      * @param  array{
      *     seller_id?: int|string|null,
+     *     channel?: SaleChannel|string|null,
      *     customer_id?: int|string|null,
      *     date?: string|null,
      *     due_date?: string|null,
@@ -62,6 +64,7 @@ class CreateSale
     private function create(User $actor, array $data): Sale
     {
         $seller = $this->resolveSeller($actor, $data);
+        $channel = $this->resolveChannel($data);
         $customer = $this->resolveCustomer($data);
         $items = $this->resolveItems($actor, $data);
         $payments = $this->resolvePayments($data);
@@ -87,6 +90,7 @@ class CreateSale
         $sale = new Sale([
             'customer_id' => $customer?->getKey(),
             'seller_id' => $seller->getKey(),
+            'channel' => $channel,
             'date' => $date,
             'subtotal' => $calculation['subtotal'],
             'adjustment' => $calculation['adjustment'],
@@ -280,6 +284,29 @@ class CreateSale
             'plan' => $plan,
             'first_due' => $first->toDateString(),
         ];
+    }
+
+    /**
+     * Mostrador si no se indica (la Caja); «Nueva venta» manda el canal elegido.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    private function resolveChannel(array $data): SaleChannel
+    {
+        $channel = $data['channel'] ?? null;
+
+        if ($channel instanceof SaleChannel) {
+            return $channel;
+        }
+
+        if (blank($channel)) {
+            return SaleChannel::Counter;
+        }
+
+        return SaleChannel::tryFrom((string) $channel)
+            ?? throw ValidationException::withMessages(['channel' => 'El canal de venta no es válido.']);
     }
 
     /**
