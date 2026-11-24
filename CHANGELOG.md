@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.0 (2026-11-24) — Atributos de las variantes
+
+Requiere migración: no (los atributos ya se guardaban en los ajustes del módulo Variantes).
+
+- **Catálogo → Atributos** (solo administrador, con el módulo Variantes encendido): el negocio define sus propios atributos (talle, color, medida…) y los valores de cada uno. Se pueden agregar, renombrar, reordenar y quitar, tanto atributos como valores.
+- Cambiar o quitar un valor **no modifica las variantes ya creadas**; solo afecta a las que se generen después con «Generar variantes».
+- Los nombres de atributo no se pueden repetir; se descartan espacios sobrantes y valores duplicados. Cada cambio queda en el registro de Actividad.
+- El panel de la plataforma (Módulos → Variantes) sigue permitiendo editarlos, con el mismo formulario.
+- La base sigue siendo genérica: no trae ningún atributo precargado; cada instalación carga los suyos.
+
 ## 0.17.0 (2026-11-23) — Códigos de barras
 
 Requiere migración: no (el código es el SKU, que ya existía).

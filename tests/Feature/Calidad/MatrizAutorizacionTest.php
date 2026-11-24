@@ -52,6 +52,7 @@ function declaredAccess(): array
         '/users', '/users/create', '/users/{record}/edit',
         '/informes/{report}/imprimir', '/compras/ordenes/{order}/imprimir',
         '/barcode-labels', '/etiquetas/imprimir',
+        '/variant-attributes',
     ];
     $platform = ['/profile', '/appearance', '/modules', '/', '/activity-logs', '/activity-logs/{record}', '/users', '/users/create', '/users/{record}/edit'];
 
