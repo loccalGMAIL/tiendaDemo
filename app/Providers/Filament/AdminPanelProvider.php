@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->navigationGroups(['Ventas', 'Catálogo', 'Compras', 'Informes', 'Configuración'])
             // Módulo Login con Google: el botón se arma solo con el módulo encendido (la vista
             // devuelve vacío si no). El panel superadmin no lo lleva.
             ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): string => view('filament.auth.google-login')->render())

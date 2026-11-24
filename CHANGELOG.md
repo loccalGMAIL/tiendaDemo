@@ -12,6 +12,9 @@ Requiere migración: no (el código es el SKU, que ya existía).
 - **Venta con lector**: en «Nueva venta», el campo «Escanear código» (con foco al abrir) agrega la variante con su precio, o suma una unidad si ya estaba. Un código desconocido, el de un producto que tiene variantes o el de un producto inactivo avisan sin tocar la venta.
 - Para imprimir: elegir en el diálogo la impresora de etiquetas, el tamaño de papel de la etiqueta, escala 100 % y sin márgenes. El lector tiene que usar la **misma distribución de teclado** que la PC (si no, el `-` del SKU llega cambiado).
 - Con etiquetas de 50 mm conviene SKU de hasta unos 12 caracteres para que las barras no queden demasiado finas; con SKU más largos, usar una etiqueta más ancha.
+- **Dashboard**: junto a «Nueva venta» hay accesos a **«Nueva compra»** (administrador, con el módulo Compras) y **«Etiquetas»** (administrador, con el módulo Códigos de barras).
+- **Menú del panel reordenado**: Ventas, Catálogo, Compras, Informes y Configuración.
+- **Landing en el celular**: el menú de secciones es el ícono de hamburguesa clásico (pasa a «X» al abrirse), en lugar de la palabra «Menú».
 
 ## 0.16.1 (2026-11-23) — Ajustes de navegación
 
