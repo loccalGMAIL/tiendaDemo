@@ -53,6 +53,9 @@ function declaredAccess(): array
         '/informes/{report}/imprimir', '/compras/ordenes/{order}/imprimir',
         '/barcode-labels', '/etiquetas/imprimir',
         '/variant-attributes',
+        '/ticket-settings',
+        // El ticket de una venta lo ve quien ve la venta: la del recorrido no es del vendedor de prueba.
+        '/ventas/{sale}/ticket',
     ];
     $platform = ['/profile', '/appearance', '/modules', '/', '/activity-logs', '/activity-logs/{record}', '/users', '/users/create', '/users/{record}/edit'];
 
@@ -153,6 +156,7 @@ it('cada ruta deja entrar solo a quienes tiene declarados', function () {
         $path = preg_replace_callback('/\{(\w+)\??\}/', fn (array $m): string => (string) match ($m[1]) {
             'record' => $records[$segment] ?? 1,
             'order' => $records['purchase-orders'],
+            'sale' => $records['sales'],
             'report' => 'ventas',
             'slug' => $segment === 'producto' ? Product::published()->value('slug') : Category::query()->value('slug'),
             default => 1,

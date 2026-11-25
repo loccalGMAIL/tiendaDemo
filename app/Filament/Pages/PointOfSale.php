@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\InstallmentSchedule;
 use App\Services\Money;
 use App\Services\SaleCalculator;
+use App\Services\SaleTicket;
 use App\Services\Tender;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -105,7 +106,11 @@ class PointOfSale extends Page
 
     public ?string $firstMonth = null;
 
-    /** @var array{id: int, number: string, total: string, change: string|null, url: string}|null */
+    /**
+     * La venta recién confirmada: su vuelto y el ticket para imprimir o reimprimir (F9).
+     *
+     * @var array{id: int, number: string, total: string, change: string|null, url: string, ticket_url: string, ask_print: bool}|null
+     */
     public ?array $lastSale = null;
 
     /** @var list<array{index: int, variant_id: int, description: string, code: string, quantity: int, unit_price: string, subtotal: string, stock: int|null, available: bool}>|null */
@@ -366,15 +371,28 @@ class PointOfSale extends Page
             return;
         }
 
+        $printMode = app(SaleTicket::class)->printMode();
+
         $this->lastSale = [
             'id' => $sale->getKey(),
             'number' => $sale->number(),
             'total' => (string) $sale->total,
             'change' => $summary['change'],
             'url' => SaleResource::getUrl('view', ['record' => $sale]),
+            // «Paga con» viaja en el enlace para que el ticket muestre el vuelto (no se guarda).
+            'ticket_url' => route('sales.ticket', ['sale' => $sale, 'pago' => $summary['tendered']]),
+            'ask_print' => $printMode === 'ask',
         ];
 
         $this->clearTicket();
+
+        // Siempre: se imprime solo. Preguntar: el foco queda en «Imprimir ticket» (Enter imprime;
+        // seguir escaneando pasa al próximo cliente sin imprimir).
+        match ($printMode) {
+            'always' => $this->dispatch('pos-print-ticket', url: $this->lastSale['ticket_url']),
+            'ask' => $this->dispatch('pos-ask-ticket'),
+            default => null,
+        };
 
         Notification::make()
             ->title("Venta {$sale->number()} confirmada")

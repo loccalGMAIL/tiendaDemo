@@ -8,6 +8,7 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\PointOfSale;
 use App\Filament\Pages\SiteSettings;
 use App\Filament\Pages\StockCount;
+use App\Filament\Pages\TicketSettings;
 use App\Filament\Pages\VariantAttributes;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Filament\Resources\Categories\CategoryResource;
@@ -51,8 +52,9 @@ const CORE_FILAMENT_CLASSES = [
     LatestSales::class,
     // Fase 5: contenido del sitio (siempre disponible para el administrador)
     SiteSettings::class,
-    // Fase 14: la Caja (venta de mostrador)
+    // Fase 14: la Caja (venta de mostrador) y el formato de su ticket
     PointOfSale::class,
+    TicketSettings::class,
 ];
 
 /**

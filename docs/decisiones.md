@@ -147,6 +147,15 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Canal de venta en la venta** (`sales.channel`, Mostrador u Online). Las ventas anteriores quedan como Mostrador. Prepara el control de caja (solo el mostrador pasa por el cajón) y el futuro carrito del catálogo, que creará ventas online.
 - **El vendedor entra a la Caja** con un `LoginResponse` propio (también lo usa el login con Google). Si venía de una página puntual, vuelve a esa.
 
+## Decisiones de diseño (Ticket, 0.20.0)
+
+- **HTML con estilos de impresión**, como las órdenes de compra y las etiquetas: sin librería de PDF ni dependencias. `@page` fija el ancho del rollo y el contenido usa el área imprimible (48 mm en 58, 72 mm en 80).
+- **La Caja imprime con un marco invisible** que carga el ticket con `?imprimir=1` y abre su diálogo; así la pantalla de venta no se mueve. Con Chrome `--kiosk-printing` no hay diálogo. Imprimir sin navegador (ESC/POS, QZ Tray) queda para cuando haga falta: suma una dependencia.
+- **«Paga con» viaja en el enlace** (`?pago=`) y no se guarda: es un dato del momento. Se muestra solo si alcanza para el último cobro. Cuando llegue el control de caja, el vuelto quedará registrado en el turno.
+- **El ticket lo ve quien puede ver la venta** (`SalePolicy::view`), y un usuario desactivado no, como en las otras impresiones.
+- **Preguntar es el modo por defecto**: no gasta papel si el cliente no lo quiere y no frena al cajero, porque seguir escaneando descarta la pregunta.
+- **Formato del ticket en los ajustes de la instalación** (`settings.ticket`), normalizado al guardar: un ancho o un modo desconocido vuelve al valor por defecto.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

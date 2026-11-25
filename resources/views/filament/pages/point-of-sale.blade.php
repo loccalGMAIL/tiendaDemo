@@ -25,6 +25,23 @@
                     this.$refs.entry?.focus();
                 }, delay);
             },
+            printTicket(url) {
+                if (! url) return;
+
+                {{-- Un marco invisible carga el ticket y abre su diálogo de impresión (o imprime
+                     directo con Chrome en modo --kiosk-printing). --}}
+                const frame = document.createElement('iframe');
+                frame.setAttribute('aria-hidden', 'true');
+                frame.style.cssText = 'position: fixed; right: 0; bottom: 0; width: 0; height: 0; border: 0;';
+                frame.src = url + (url.includes('?') ? '&' : '?') + 'imprimir=1';
+                document.body.appendChild(frame);
+                setTimeout(() => frame.remove(), 60000);
+                this.focusEntry(800);
+            },
+            askTicket() {
+                {{-- El botón de Filament es su propio componente Alpine: se lo busca por atributo. --}}
+                setTimeout(() => this.$root.querySelector('[data-pos-print]')?.focus(), 400);
+            },
             focusTendered() {
                 this.$nextTick(() => this.$refs.tendered?.focus());
             },
@@ -83,9 +100,24 @@
                 } else if (event.key === 'F4') {
                     event.preventDefault();
                     $wire.mountAction('selectCustomer');
+                } else if (event.key === 'F9') {
+                    event.preventDefault();
+                    this.printTicket($wire.lastSale?.ticket_url);
                 } else if (event.key === 'F12') {
                     event.preventDefault();
-                    if (! $wire.checkingOut) $wire.openCheckout();
+                    if ($wire.checkingOut) return;
+
+                    {{-- Si quedó un código escrito sin Enter, primero se agrega. --}}
+                    const pending = this.$refs.entry?.value.trim() ?? '';
+
+                    if (pending === '') {
+                        $wire.openCheckout();
+
+                        return;
+                    }
+
+                    this.$refs.entry.value = '';
+                    $wire.submitEntry(pending).then(() => $wire.openCheckout());
                 } else if (event.key === 'Escape') {
                     if ($wire.checkingOut) {
                         event.preventDefault();
@@ -129,6 +161,8 @@
         x-on:keydown.window="onKey($event)"
         x-on:pos-focus-entry.window="focusEntry(300)"
         x-on:modal-closed.window="focusEntry(300)"
+        x-on:pos-print-ticket.window="printTicket($event.detail.url)"
+        x-on:pos-ask-ticket.window="askTicket()"
     >
         <div class="grid gap-6 lg:grid-cols-3">
             {{-- Entrada y ticket --}}
@@ -302,6 +336,21 @@
                         @if ($lastSale['change'] !== null)
                             <p class="mt-2 text-2xl font-bold tabular-nums text-success-600 dark:text-success-400">Vuelto {{ $money($lastSale['change']) }}</p>
                         @endif
+                        <div class="mt-3 space-y-1">
+                            <x-filament::button
+                                color="gray"
+                                size="sm"
+                                icon="heroicon-o-printer"
+                                class="w-full"
+                                data-pos-print
+                                x-on:click="printTicket($wire.lastSale?.ticket_url)"
+                            >
+                                Imprimir ticket (F9)
+                            </x-filament::button>
+                            @if ($lastSale['ask_print'])
+                                <p class="text-center text-xs text-gray-500 dark:text-gray-400">Enter imprime · seguí escaneando para no imprimir</p>
+                            @endif
+                        </div>
                     </x-filament::section>
                 @endif
 
@@ -316,6 +365,7 @@
                         <div><dt class="inline"><kbd class="pos-kbd">+</kbd> <kbd class="pos-kbd">−</kbd></dt> <dd class="inline">Cantidad</dd></div>
                         <div><dt class="inline"><kbd class="pos-kbd">Supr</kbd></dt> <dd class="inline">Quitar línea</dd></div>
                         <div><dt class="inline"><kbd class="pos-kbd">3*</kbd></dt> <dd class="inline">Tres unidades</dd></div>
+                        <div><dt class="inline"><kbd class="pos-kbd">F9</kbd></dt> <dd class="inline">Imprimir ticket</dd></div>
                     </dl>
                 </div>
             </div>

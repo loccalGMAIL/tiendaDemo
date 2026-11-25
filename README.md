@@ -81,6 +81,16 @@ Alta de las credenciales (una por cliente), en [Google Cloud Console](https://co
 6. En el panel del negocio: nombre, textos y datos de contacto en *Configuración → Sitio*.
 7. Apuntar el DNS y el proxy a los tres dominios.
 
+## Caja e impresión de tickets
+
+La **Caja** (Ventas → Caja) es la pantalla del mostrador: funciona con teclado y lector de códigos, y el vendedor entra directo ahí al iniciar sesión. El formato del ticket se configura en **Configuración → Ticket** (ancho de 58 u 80 mm, encabezado, pie, qué datos mostrar, copias y si la Caja imprime siempre, pregunta o no imprime).
+
+- **Impresora**: instalar la térmica en la PC de la caja con su tamaño de papel (58 u 80 mm) y dejarla como **predeterminada**. En el diálogo de impresión: márgenes **Ninguno** y escala **100 %**.
+- **Sin diálogo de impresión**: abrir el panel con Chrome en modo `--kiosk-printing`, que imprime directo en la impresora predeterminada. Por ejemplo, un acceso directo con
+  `chrome.exe --kiosk-printing --app=https://app.negocio.com/caja`
+  (cerrar antes todas las ventanas de Chrome para que tome la opción).
+- **Lector de códigos**: tiene que usar la misma distribución de teclado que la PC y mandar Enter al final de cada lectura (la configuración de fábrica de casi todos).
+
 ## Despliegue en producción
 
 - `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, `LOG_LEVEL=warning`, los tres dominios reales y `APP_URL` con `https`.

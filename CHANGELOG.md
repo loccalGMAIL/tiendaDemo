@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.20.0 (2026-11-25) — Ticket de venta
+
+Requiere migración: no (el formato se guarda en los ajustes de la instalación).
+
+- **Ticket para impresora térmica** de 58 u 80 mm: nombre del negocio, dirección y teléfono del sitio, líneas propias (CUIT, condición frente al IVA…), número, fecha y hora, vendedor, cliente, productos, subtotal, descuentos o recargos, total, cobros y, si se cobró en la Caja con «Paga con», lo entregado y el vuelto. Con saldo a cuenta, lo que queda y sus vencimientos. Una venta anulada sale marcada **ANULADA**.
+- **Configuración → Ticket** (solo administrador): ancho del papel, copias (hasta 3), encabezado, pie, qué datos se muestran (vendedor, cliente, código de cada producto, leyenda «No válido como factura») y qué hace la Caja al confirmar. Botón «Ver con la última venta». Cada cambio queda en Actividad.
+- **En la Caja**, al confirmar:
+  - **Preguntar** (por defecto): el foco queda en «Imprimir ticket»; Enter lo imprime y seguir escaneando pasa al próximo cliente sin imprimir.
+  - **Imprimir siempre**: se imprime solo.
+  - **No imprimir**: se puede imprimir después.
+  - **F9** imprime el ticket de la última venta en cualquier momento.
+- **Reimpresión** desde la vista de cada venta («Imprimir ticket»). El ticket lo ve quien puede ver la venta: el vendedor, las suyas.
+- **F12 con un código escrito sin Enter** lo agrega antes de abrir el cobro.
+- Imprime con el diálogo del navegador; con Chrome en modo `--kiosk-printing` imprime directo en la impresora predeterminada (ver README, «Caja e impresión de tickets»).
+- Nuevos: ruta `/ventas/{venta}/ticket` (`SaleTicketPrintController`), servicio `SaleTicket` y página `TicketSettings`.
+- Fuera de esta entrega: impresión ESC/POS sin navegador (sumaría una dependencia), ticket de cambio sin precios y ancho del papel por caja (llega con el control de caja).
+
 ## 0.19.0 (2026-11-24) — Caja y canal de venta
 
 Requiere migración: sí (`sales.channel`; las ventas que ya existían quedan como Mostrador).
