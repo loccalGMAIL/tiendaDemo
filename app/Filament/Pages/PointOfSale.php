@@ -7,6 +7,8 @@ use App\Actions\Sales\FindVariantByCode;
 use App\Enums\Module;
 use App\Enums\SaleChannel;
 use App\Facades\Modules;
+use App\Filament\Concerns\BelongsToModule;
+use App\Filament\Concerns\WorksWithCashRegister;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Sales\SaleResource;
 use App\Models\Customer;
@@ -23,7 +25,6 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Support\Enums\Size;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -33,14 +34,18 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Caja: la pantalla de venta del mostrador, pensada para teclado y lector de códigos. Un solo
+ * Caja (módulo Caja): la pantalla de venta del mostrador, pensada para teclado y lector de códigos. Un solo
  * campo recibe códigos, SKU o texto («3*CODIGO» suma tres unidades); el cobro se hace en una
  * ventana aparte con el vuelto a la vista. La venta se confirma con la misma acción que
  * «Nueva venta» (`CreateSale`), siempre con canal Mostrador, fecha de hoy y el usuario como
- * vendedor. El precio sale siempre del catálogo: la pantalla no lo manda.
+ * vendedor. El precio sale siempre del catálogo: la pantalla no lo manda. Con el módulo
+ * Control de caja, se vende en el turno abierto de la caja de esta PC (WorksWithCashRegister).
  */
-class PointOfSale extends Page
+class PointOfSale extends SalesStaffPage
 {
+    use BelongsToModule;
+    use WorksWithCashRegister;
+
     public const MAX_QUANTITY = 9999;
 
     public const MAX_RESULTS = 20;
@@ -119,9 +124,9 @@ class PointOfSale extends Page
     /** @var Collection<int, PaymentMethod>|null */
     private ?Collection $methodsMemo = null;
 
-    public static function canAccess(): bool
+    protected static function module(): Module
     {
-        return SaleResource::canCreate();
+        return Module::PointOfSale;
     }
 
     /**
@@ -345,6 +350,15 @@ class PointOfSale extends Page
             return;
         }
 
+        // Con Control de caja se cobra en el turno abierto de la caja de esta PC.
+        $cashSession = $this->cashControlEnabled() ? $this->currentCashSession() : null;
+
+        if ($this->cashControlEnabled() && $cashSession === null) {
+            Notification::make()->title('La caja está cerrada')->body('Abrila para cobrar.')->danger()->send();
+
+            return;
+        }
+
         $summary = $this->checkoutSummary();
 
         if ($summary['error'] !== null) {
@@ -364,7 +378,10 @@ class PointOfSale extends Page
         }
 
         try {
-            $sale = app(CreateSale::class)->handle($actor, $this->salePayload($summary));
+            $sale = app(CreateSale::class)->handle($actor, [
+                ...$this->salePayload($summary),
+                'cash_session_id' => $cashSession?->getKey(),
+            ]);
         } catch (ValidationException $e) {
             Notification::make()->title('No se pudo confirmar la venta')->body($e->validator->errors()->first())->danger()->send();
 

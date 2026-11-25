@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\PaymentMethods\Tables;
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
@@ -31,6 +33,10 @@ class PaymentMethodsTable
                     ->label('Orden')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                IconColumn::make('is_cash')
+                    ->label('Efectivo')
+                    ->boolean()
+                    ->visible(fn (): bool => Modules::enabled(Module::CashControl)),
                 IconColumn::make('active')
                     ->label('Activo')
                     ->boolean(),

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
-    'customer_id', 'sale_id', 'date', 'payment_method_id', 'installments', 'adjustment_percent',
+    'customer_id', 'sale_id', 'cash_session_id', 'date', 'payment_method_id', 'installments', 'adjustment_percent',
     'base_amount', 'adjustment_amount', 'amount', 'collected_by', 'notes',
 ])]
 class Payment extends Model
@@ -119,6 +119,16 @@ class Payment extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Turno de caja en que se cobró (módulo Control de caja), si pasó por una caja.
+     *
+     * @return BelongsTo<CashSession, $this>
+     */
+    public function cashSession(): BelongsTo
+    {
+        return $this->belongsTo(CashSession::class);
     }
 
     /**

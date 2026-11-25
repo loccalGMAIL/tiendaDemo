@@ -41,6 +41,7 @@ class CreateSale
      * @param  array{
      *     seller_id?: int|string|null,
      *     channel?: SaleChannel|string|null,
+     *     cash_session_id?: int|string|null,
      *     customer_id?: int|string|null,
      *     date?: string|null,
      *     due_date?: string|null,
@@ -91,6 +92,9 @@ class CreateSale
             'customer_id' => $customer?->getKey(),
             'seller_id' => $seller->getKey(),
             'channel' => $channel,
+            // Turno de caja en que se cobra (módulo Control de caja): lo valida y registra el
+            // efectivo el listener del módulo.
+            'cash_session_id' => filled($data['cash_session_id'] ?? null) ? (int) $data['cash_session_id'] : null,
             'date' => $date,
             'subtotal' => $calculation['subtotal'],
             'adjustment' => $calculation['adjustment'],

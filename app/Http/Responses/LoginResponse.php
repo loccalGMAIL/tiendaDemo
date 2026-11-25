@@ -2,6 +2,8 @@
 
 namespace App\Http\Responses;
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use App\Filament\Pages\PointOfSale;
 use App\Models\User;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
@@ -10,7 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Livewire\Features\SupportRedirects\Redirector;
 
 /**
- * Adónde va cada uno al ingresar al panel: el vendedor, directo a la Caja; el resto, al
+ * Adónde va cada uno al ingresar al panel: el vendedor, directo a la Caja (módulo Caja); el resto, al
  * escritorio. Si venía de una página puntual (sesión vencida), vuelve a esa.
  */
 class LoginResponse implements LoginResponseContract
@@ -22,7 +24,8 @@ class LoginResponse implements LoginResponseContract
 
     public static function homeFor(mixed $user): string
     {
-        if ($user instanceof User && $user->isSeller()) {
+        // Con el módulo Caja apagado, el vendedor también va al escritorio.
+        if ($user instanceof User && $user->isSeller() && Modules::enabled(Module::PointOfSale)) {
             return PointOfSale::getUrl(panel: 'admin');
         }
 

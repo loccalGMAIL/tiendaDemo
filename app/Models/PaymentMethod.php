@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'installments', 'adjustment_percent', 'active', 'position'])]
+#[Fillable(['name', 'installments', 'adjustment_percent', 'is_cash', 'active', 'position'])]
 class PaymentMethod extends Model
 {
     /** @use HasFactory<PaymentMethodFactory> */
@@ -23,6 +23,8 @@ class PaymentMethod extends Model
         return [
             'installments' => 'integer',
             'adjustment_percent' => 'decimal:2',
+            // Módulo Control de caja: lo cobrado con este medio entra al cajón.
+            'is_cash' => 'boolean',
             'active' => 'boolean',
             'position' => 'integer',
         ];

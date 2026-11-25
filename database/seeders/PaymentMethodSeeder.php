@@ -14,7 +14,7 @@ class PaymentMethodSeeder extends Seeder
     public function run(): void
     {
         $methods = [
-            ['name' => 'Efectivo', 'installments' => 1, 'adjustment_percent' => '-10.00'],
+            ['name' => 'Efectivo', 'installments' => 1, 'adjustment_percent' => '-10.00', 'is_cash' => true],
             ['name' => 'Transferencia', 'installments' => 1, 'adjustment_percent' => '0.00'],
             ['name' => 'Débito', 'installments' => 1, 'adjustment_percent' => '0.00'],
             ['name' => 'Tarjeta 1 cuota', 'installments' => 1, 'adjustment_percent' => '0.00'],

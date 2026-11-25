@@ -3,6 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Enums\ActivityEvent;
+use App\Enums\Module;
+use App\Facades\Modules;
 use App\Models\Sale;
 use App\Services\ActivityLogger;
 use App\Services\SaleTicket;
@@ -21,8 +23,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
 /**
- * Configuración → Ticket (solo administrador): formato del ticket que se imprime en la Caja y
- * desde cada venta, y qué hace la Caja al confirmar. Es del núcleo: toda instalación vende.
+ * Configuración → Ticket (solo administrador): formato del ticket que se imprime desde cada venta
+ * y, con el módulo Caja, qué hace la Caja al confirmar. Es del núcleo: toda instalación vende.
  *
  * @property-read Schema $form
  */
@@ -88,10 +90,12 @@ class TicketSettings extends AdministratorPage
                         ->required()
                         ->selectablePlaceholder(false)
                         ->native(false),
+                    // Solo con el módulo Caja: la pantalla del mostrador es la que imprime al cobrar.
                     Radio::make('print_on_confirm')
                         ->label('Al confirmar una venta en la Caja')
                         ->options(SaleTicket::PRINT_MODES)
-                        ->required()
+                        ->required(fn (): bool => Modules::enabled(Module::PointOfSale))
+                        ->visible(fn (): bool => Modules::enabled(Module::PointOfSale))
                         ->columnSpanFull(),
                 ]),
             Section::make('Encabezado y pie')

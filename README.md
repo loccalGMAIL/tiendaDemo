@@ -83,7 +83,9 @@ Alta de las credenciales (una por cliente), en [Google Cloud Console](https://co
 
 ## Caja e impresión de tickets
 
-La **Caja** (Ventas → Caja) es la pantalla del mostrador: funciona con teclado y lector de códigos, y el vendedor entra directo ahí al iniciar sesión. El formato del ticket se configura en **Configuración → Ticket** (ancho de 58 u 80 mm, encabezado, pie, qué datos mostrar, copias y si la Caja imprime siempre, pregunta o no imprime).
+La **Caja** (módulo Caja, Ventas → Caja) es la pantalla del mostrador: funciona con teclado y lector de códigos, y el vendedor entra directo ahí al iniciar sesión. El formato del ticket se configura en **Configuración → Ticket** (ancho de 58 u 80 mm, encabezado, pie, qué datos mostrar, copias y si la Caja imprime siempre, pregunta o no imprime).
+
+Con el módulo **Control de caja** (requiere Caja), cada PC trabaja en una caja (Configuración → Cajas), que se abre con un fondo y se cierra con el arqueo. Marcar como **«Es efectivo»** los medios de pago que entran al cajón (Configuración → Medios de pago). Los turnos, con su arqueo y sus movimientos, están en **Ventas → Turnos de caja**.
 
 - **Impresora**: instalar la térmica en la PC de la caja con su tamaño de papel (58 u 80 mm) y dejarla como **predeterminada**. En el diálogo de impresión: márgenes **Ninguno** y escala **100 %**.
 - **Sin diálogo de impresión**: abrir el panel con Chrome en modo `--kiosk-printing`, que imprime directo en la impresora predeterminada. Por ejemplo, un acceso directo con

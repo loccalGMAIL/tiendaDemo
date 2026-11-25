@@ -73,6 +73,14 @@ class ModuleSettingsForm
                     ->helperText('Con Stock encendido, las variantes sin existencia aparecen como agotadas.'),
             ],
             Module::Barcodes => self::barcodeFields(),
+            Module::CashControl => [
+                Toggle::make('blind_count')
+                    ->label('Arqueo ciego')
+                    ->helperText('El vendedor cuenta el efectivo sin ver cuánto esperaba el sistema; la diferencia la ve el administrador.'),
+                Toggle::make('seller_can_withdraw')
+                    ->label('El vendedor puede hacer retiros de efectivo')
+                    ->helperText('Siempre con motivo. Apagado, solo el administrador retira; los ingresos los puede hacer cualquiera.'),
+            ],
             default => [],
         };
     }

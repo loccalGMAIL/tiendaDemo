@@ -32,6 +32,7 @@ class CreateSale extends CreateRecord
             return app(CreateSaleAction::class)->handle($actor, [
                 'seller_id' => $data['seller_id'] ?? null,
                 'channel' => $data['channel'] ?? null,
+                'cash_session_id' => $data['cash_session_id'] ?? null,
                 'customer_id' => $data['customer_id'] ?? null,
                 'date' => $data['date'] ?? null,
                 'due_date' => $data['due_date'] ?? null,

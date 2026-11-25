@@ -6,6 +6,11 @@
         $customerName = $this->customerName();
         $summary = $checkingOut ? $this->checkoutSummary() : null;
         $money = fn (string $amount): string => \App\Services\Money::format($amount);
+
+        // Módulo Control de caja: sin caja elegida o sin turno abierto no se vende.
+        $cashControl = $this->cashControlEnabled();
+        $cashSession = $cashControl ? $this->currentCashSession() : null;
+        $cashBlocked = $cashControl && $cashSession === null;
     @endphp
 
     <div
@@ -16,13 +21,17 @@
             selectedLine: $wire.$entangle('selectedLine'),
             tendered: $wire.$entangle('tendered'),
             methodIds: @js($methods->keys()->values()),
+            {{-- Por id y no con x-ref: el campo aparece recién al abrir la caja y la referencia no siempre se registra. --}}
+            entryInput() {
+                return document.getElementById('pos-entry');
+            },
             isTyping(target) {
                 return ['INPUT', 'SELECT', 'TEXTAREA'].includes(target?.tagName);
             },
             focusEntry(delay = 0) {
                 setTimeout(() => {
                     if ($wire.checkingOut || ($wire.mountedActions ?? []).length > 0) return;
-                    this.$refs.entry?.focus();
+                    this.entryInput()?.focus();
                 }, delay);
             },
             printTicket(url) {
@@ -43,10 +52,10 @@
                 setTimeout(() => this.$root.querySelector('[data-pos-print]')?.focus(), 400);
             },
             focusTendered() {
-                this.$nextTick(() => this.$refs.tendered?.focus());
+                this.$nextTick(() => document.getElementById('pos-tendered')?.focus());
             },
             submitEntry() {
-                const input = this.$refs.entry;
+                const input = this.entryInput();
                 const value = input.value.trim();
                 input.value = '';
 
@@ -100,6 +109,9 @@
                 } else if (event.key === 'F4') {
                     event.preventDefault();
                     $wire.mountAction('selectCustomer');
+                } else if (event.key === 'F8') {
+                    event.preventDefault();
+                    if (this.$root.querySelector('[data-pos-cash-open]')) $wire.mountAction('cashMovement');
                 } else if (event.key === 'F9') {
                     event.preventDefault();
                     this.printTicket($wire.lastSale?.ticket_url);
@@ -108,7 +120,7 @@
                     if ($wire.checkingOut) return;
 
                     {{-- Si quedó un código escrito sin Enter, primero se agrega. --}}
-                    const pending = this.$refs.entry?.value.trim() ?? '';
+                    const pending = this.entryInput()?.value.trim() ?? '';
 
                     if (pending === '') {
                         $wire.openCheckout();
@@ -116,7 +128,7 @@
                         return;
                     }
 
-                    this.$refs.entry.value = '';
+                    this.entryInput().value = '';
                     $wire.submitEntry(pending).then(() => $wire.openCheckout());
                 } else if (event.key === 'Escape') {
                     if ($wire.checkingOut) {
@@ -134,7 +146,7 @@
                     }
                 } else if (! $wire.checkingOut && event.key.length === 1 && ! event.ctrlKey && ! event.metaKey && ! event.altKey && ! this.isTyping(event.target)) {
                     {{-- Si el foco quedó en otro lado, lo que llega del lector va igual al campo. --}}
-                    this.$refs.entry?.focus();
+                    this.entryInput()?.focus();
                 }
             },
             parseAmount(text) {
@@ -164,6 +176,11 @@
         x-on:pos-print-ticket.window="printTicket($event.detail.url)"
         x-on:pos-ask-ticket.window="askTicket()"
     >
+        @if ($cashControl)
+            @include('filament.pages.point-of-sale.cash-bar')
+        @endif
+
+        @if (! $cashBlocked)
         <div class="grid gap-6 lg:grid-cols-3">
             {{-- Entrada y ticket --}}
             <div class="min-w-0 space-y-4 lg:col-span-2">
@@ -173,7 +190,6 @@
                         <x-filament::input
                             id="pos-entry"
                             type="text"
-                            x-ref="entry"
                             x-on:keydown="onEntryKey($event)"
                             autocomplete="off"
                             autocapitalize="off"
@@ -380,7 +396,7 @@
             <div
                 wire:key="pos-checkout"
                 class="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-gray-950/50 p-4 lg:items-center"
-                x-init="$nextTick(() => $refs.firstMethod?.focus())"
+                x-init="$nextTick(() => $root.querySelector('[data-pos-first-method]')?.focus())"
             >
                 <div role="dialog" aria-modal="true" aria-labelledby="pos-checkout-title" class="w-full max-w-4xl rounded-xl bg-white shadow-xl ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
                     <div class="flex items-center justify-between gap-3 border-b border-gray-200 px-6 py-4 dark:border-white/10">
@@ -405,7 +421,7 @@
                                         <button
                                             type="button"
                                             wire:key="method-{{ $method->id }}"
-                                            @if ($loop->first) x-ref="firstMethod" @endif
+                                            @if ($loop->first) data-pos-first-method @endif
                                             x-on:click="$wire.choosePaymentMethod({{ $method->id }}).then(() => focusTendered())"
                                             @class([
                                                 'flex items-center gap-2 rounded-lg px-3 py-2 text-start text-sm ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
@@ -545,7 +561,6 @@
                                                 type="text"
                                                 inputmode="decimal"
                                                 autocomplete="off"
-                                                x-ref="tendered"
                                                 x-model="tendered"
                                                 x-on:keydown.enter.prevent="$wire.confirm()"
                                                 placeholder="Opcional: lo que entrega el cliente"
@@ -590,6 +605,7 @@
                     </div>
                 </div>
             </div>
+        @endif
         @endif
     </div>
 </x-filament-panels::page>

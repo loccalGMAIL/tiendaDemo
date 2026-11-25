@@ -137,7 +137,7 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 
 ## Decisiones de diseño (Caja, 0.19.0)
 
-- **La Caja es del núcleo**, no un módulo: toda instalación vende en el mostrador. El control de caja (turnos, arqueo y cierre) será un módulo aparte, porque no todos los negocios lo necesitan.
+- **La Caja es un módulo** (desde 0.21.0): no todos los negocios venden en un mostrador con lector. El control de caja (turnos, arqueo y cierre) es otro módulo que la requiere. El canal de venta y el ticket quedan en el núcleo porque también sirven para «Nueva venta».
 - **Conviven la Caja y «Nueva venta»**: la Caja es para el mostrador (teclado y lector, sin fecha ni vendedor para elegir); el formulario queda para lo que se cierra a distancia y para cargas con otra fecha o vendedor.
 - **Misma acción que el formulario** (`CreateSale`): las reglas de la venta, los eventos (stock, cuenta corriente) y los errores son los mismos. La Caja solo arma el pedido.
 - **El ticket guarda variante y cantidad**; descripción, precio y existencia se leen del catálogo en cada pantalla. Así no se pueden alterar desde el navegador y un cambio de precio se ve antes de cobrar.
@@ -155,6 +155,19 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **El ticket lo ve quien puede ver la venta** (`SalePolicy::view`), y un usuario desactivado no, como en las otras impresiones.
 - **Preguntar es el modo por defecto**: no gasta papel si el cliente no lo quiere y no frena al cajero, porque seguir escaneando descarta la pregunta.
 - **Formato del ticket en los ajustes de la instalación** (`settings.ticket`), normalizado al guardar: un ancho o un modo desconocido vuelve al valor por defecto.
+
+## Decisiones de diseño (Control de caja, 0.21.0)
+
+- **Dos módulos**: Caja (la pantalla) y Control de caja (turnos), que requiere Caja. Así se puede vender en el mostrador sin arqueo.
+- **Libro de efectivo por turno** (`cash_movements`), inmutable y con signo, como la cuenta corriente: lo esperado en el cajón es la suma. Solo entra el efectivo; los demás medios del turno se resumen desde los cobros (`payments.cash_session_id`) para controlarlos contra los cupones.
+- **El medio de pago dice si es efectivo** (`payment_methods.is_cash`). La migración marca los que se llaman «Efectivo».
+- **Varias personas por caja**: un turno por caja, abierto por quien llega; cada venta conserva su vendedor. La PC recuerda su caja con una cookie.
+- **El núcleo no conoce las cajas**: `CreateSale` copia el turno y `SaleCancelled` lleva el turno elegido para la devolución; los listeners del módulo validan y registran. Una venta sin turno no toca ninguna caja, por eso el módulo no exige turno en `CreateSale` (sí la pantalla Caja).
+- **Anular devuelve desde la caja abierta en ese momento** (lo decidido con el negocio): la elegida, o el turno de la venta si sigue abierto, o la única abierta. Con varias abiertas hay que elegir; sin ninguna, la devolución queda fuera de caja y la anulación sigue.
+- **Arqueo ciego opcional** (apagado por defecto): el vendedor no ve lo esperado ni la diferencia, ni al cerrar ni en el resumen impreso. El administrador ve todo en Turnos de caja.
+- **Retiros del vendedor opcionales** (apagado por defecto), siempre con motivo y sin pasar de lo que hay en el cajón. Los ingresos los hace cualquiera.
+- **Un turno cerrado no se reabre**: una corrección es un movimiento en otro turno. El administrador puede cerrar desde la ficha un turno que quedó abierto. Cerrar no pide el módulo, para no dejar turnos colgados si lo apagan.
+- **Cobros de cuenta corriente**: todavía no entran a la caja; llegan con la 0.22.0 (cobro desde la Caja).
 
 ## Entorno local
 

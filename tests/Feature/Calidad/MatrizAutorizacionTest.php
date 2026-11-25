@@ -2,6 +2,8 @@
 
 use App\Facades\Modules;
 use App\Models\ActivityLog;
+use App\Models\CashRegister;
+use App\Models\CashSession;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
@@ -54,6 +56,10 @@ function declaredAccess(): array
         '/barcode-labels', '/etiquetas/imprimir',
         '/variant-attributes',
         '/ticket-settings',
+        '/cash-registers', '/cash-registers/create', '/cash-registers/{record}/edit',
+        '/cash-sessions', '/cash-sessions/{record}',
+        // El resumen de un turno: el vendedor solo ve los suyos y el del recorrido no lo es.
+        '/caja/turnos/{session}/imprimir',
         // El ticket de una venta lo ve quien ve la venta: la del recorrido no es del vendedor de prueba.
         '/ventas/{sale}/ticket',
     ];
@@ -104,6 +110,7 @@ it('cada ruta deja entrar solo a quienes tiene declarados', function () {
     // La demostración no trae proveedores, órdenes ni compras: se crean para tener un registro real de cada recurso.
     Supplier::factory()->create();
     PurchaseOrder::factory()->create();
+    CashSession::factory()->create();
     Purchase::factory()->create();
 
     // Un registro real de cada recurso: así «404» significa lo que dice y no «no existe el 1».
@@ -115,6 +122,8 @@ it('cada ruta deja entrar solo a quienes tiene declarados', function () {
         'payment-methods' => PaymentMethod::query()->value('id'),
         'payments' => Payment::query()->onAccount()->value('id'),
         'products' => Product::query()->value('id'),
+        'cash-registers' => CashRegister::query()->value('id'),
+        'cash-sessions' => CashSession::query()->value('id'),
         'purchase-orders' => PurchaseOrder::query()->value('id'),
         'purchases' => Purchase::query()->value('id'),
         'sales' => Sale::query()->value('id'),
@@ -157,6 +166,7 @@ it('cada ruta deja entrar solo a quienes tiene declarados', function () {
             'record' => $records[$segment] ?? 1,
             'order' => $records['purchase-orders'],
             'sale' => $records['sales'],
+            'session' => $records['cash-sessions'],
             'report' => 'ventas',
             'slug' => $segment === 'producto' ? Product::published()->value('slug') : Category::query()->value('slug'),
             default => 1,

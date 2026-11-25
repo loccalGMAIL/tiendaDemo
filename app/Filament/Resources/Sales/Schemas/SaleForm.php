@@ -9,6 +9,7 @@ use App\Enums\SaleChannel;
 use App\Facades\Modules;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Products\Schemas\ProductForm;
+use App\Models\CashSession;
 use App\Models\Customer;
 use App\Models\FinancingPlan;
 use App\Models\PaymentMethod;
@@ -73,7 +74,23 @@ class SaleForm
                         ->options(SaleChannel::class)
                         ->default(SaleChannel::Online->value)
                         ->required()
-                        ->native(false),
+                        ->native(false)
+                        ->live(),
+                    // Módulo Control de caja: una venta de mostrador cargada acá puede entrar a una caja abierta.
+                    Select::make('cash_session_id')
+                        ->label('Caja')
+                        ->placeholder('Sin caja (no entra al arqueo)')
+                        ->options(fn (): array => CashSession::query()
+                            ->with(['register', 'openedBy'])
+                            ->open()
+                            ->orderBy('id')
+                            ->get()
+                            ->mapWithKeys(fn (CashSession $session): array => [$session->getKey() => $session->label()])
+                            ->all())
+                        ->default(fn (): ?int => ($open = CashSession::query()->open()->pluck('id'))->count() === 1 ? (int) $open->first() : null)
+                        ->native(false)
+                        ->helperText('Lo cobrado en efectivo entra al cajón de esa caja.')
+                        ->visible(fn (Get $get): bool => Modules::enabled(Module::CashControl) && self::channelIs($get, SaleChannel::Counter)),
                     DatePicker::make('date')
                         ->label('Fecha')
                         ->default(fn (): string => now()->toDateString())
@@ -248,6 +265,13 @@ class SaleForm
                         ->visible(fn (Get $get): bool => self::balanceWarning($get) !== null),
                 ]),
         ]);
+    }
+
+    private static function channelIs(Get $get, SaleChannel $channel): bool
+    {
+        $value = $get('channel');
+
+        return ($value instanceof SaleChannel ? $value : SaleChannel::tryFrom((string) $value)) === $channel;
     }
 
     private static function onAccount(): bool

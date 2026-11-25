@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\BarcodeLabelsPrintController;
+use App\Http\Controllers\CashSessionPrintController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PurchaseOrderPrintController;
@@ -39,6 +40,13 @@ Route::domain(config('domains.panel'))
     ->get('/ventas/{sale}/ticket', SaleTicketPrintController::class)
     ->whereNumber('sale')
     ->name('sales.ticket');
+
+// Resumen de un turno de caja (módulo Control de caja): con el módulo apagado responde 404.
+Route::domain(config('domains.panel'))
+    ->middleware('module:cash-control')
+    ->get('/caja/turnos/{session}/imprimir', CashSessionPrintController::class)
+    ->whereNumber('session')
+    ->name('cash-sessions.print');
 
 // Orden de compra imprimible (módulo Compras): con el módulo apagado responde 404; solo administradores.
 Route::domain(config('domains.panel'))

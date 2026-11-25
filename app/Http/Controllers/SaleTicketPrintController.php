@@ -30,7 +30,7 @@ class SaleTicketPrintController extends Controller
 
         abort_unless($user->active && $user->can('view', $sale), 403);
 
-        $sale->load(['items.variant.product', 'payments.method', 'seller', 'customer', 'installments']);
+        $sale->load(['items.variant.product', 'payments.method', 'seller', 'customer', 'installments', 'cashSession.register']);
 
         $payments = $sale->payments->sortBy('id')->values();
         $lastAmount = (string) ($payments->last()->amount ?? '0.00');
@@ -40,7 +40,8 @@ class SaleTicketPrintController extends Controller
         return view('sales.ticket-print', [
             'sale' => $sale,
             'payments' => $payments,
-            'settings' => $ticket->settings(),
+            // Con Control de caja, la caja puede tener su propio rollo.
+            'settings' => [...$ticket->settings(), 'paper_width' => $sale->cashSession->register->paper_width ?? $ticket->settings()['paper_width']],
             'business' => $ticket->businessName(),
             'headerLines' => $ticket->headerLines(),
             'footerLines' => $ticket->footerLines(),

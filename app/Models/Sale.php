@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * LogsActivity porque registra sus eventos (alta y anulación) de forma explícita.
  */
 #[Fillable([
-    'customer_id', 'seller_id', 'channel', 'date', 'subtotal', 'adjustment', 'total', 'total_cost',
+    'customer_id', 'seller_id', 'channel', 'cash_session_id', 'date', 'subtotal', 'adjustment', 'total', 'total_cost',
     'down_payment', 'financed_amount', 'financing_surcharge', 'financing_surcharge_percent',
     'financing_plan_id', 'installments_count', 'first_due_date',
     'status', 'notes',
@@ -132,6 +132,16 @@ class Sale extends Model
     public function installments(): HasMany
     {
         return $this->hasMany(Installment::class)->orderBy('number');
+    }
+
+    /**
+     * Turno de caja en que se cobró (módulo Control de caja); vacío si no pasó por una caja.
+     *
+     * @return BelongsTo<CashSession, $this>
+     */
+    public function cashSession(): BelongsTo
+    {
+        return $this->belongsTo(CashSession::class);
     }
 
     /**

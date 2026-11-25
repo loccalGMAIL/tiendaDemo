@@ -20,6 +20,8 @@ enum Module: string implements HasLabel
     case GoogleLogin = 'google-login';
     case CustomColors = 'custom-colors';
     case Barcodes = 'barcodes';
+    case PointOfSale = 'point-of-sale';
+    case CashControl = 'cash-control';
 
     public function getLabel(): string
     {
@@ -34,6 +36,8 @@ enum Module: string implements HasLabel
             self::GoogleLogin => 'Login con Google',
             self::CustomColors => 'Colores personalizables',
             self::Barcodes => 'Códigos de barras',
+            self::PointOfSale => 'Caja',
+            self::CashControl => 'Control de caja',
         };
     }
 
@@ -50,6 +54,8 @@ enum Module: string implements HasLabel
             self::GoogleLogin => 'Botón «Ingresar con Google» en el login del panel.',
             self::CustomColors => 'El administrador del cliente elige la combinación de colores.',
             self::Barcodes => 'Etiquetas con código de barras (el SKU) para imprimir y venta con lector de códigos.',
+            self::PointOfSale => 'Pantalla de venta del mostrador para teclado y lector de códigos, con vuelto e impresión del ticket al cobrar.',
+            self::CashControl => 'Cajas y turnos del mostrador: apertura con fondo, ingresos y retiros, arqueo y cierre.',
         };
     }
 
@@ -62,6 +68,7 @@ enum Module: string implements HasLabel
     {
         return match ($this) {
             self::Installments => [self::CurrentAccount],
+            self::CashControl => [self::PointOfSale],
             default => [],
         };
     }
@@ -118,6 +125,10 @@ enum Module: string implements HasLabel
                 'gap_y' => 0,
                 'show_price' => true,
                 'show_business' => false,
+            ],
+            self::CashControl => [
+                'blind_count' => false,
+                'seller_can_withdraw' => false,
             ],
             default => [],
         };

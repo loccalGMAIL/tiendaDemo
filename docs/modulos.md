@@ -47,6 +47,10 @@ El núcleo no llama a los módulos: dispara eventos. `SaleCreated` y `SaleCancel
 
 Cuenta corriente sigue el mismo camino: `RegisterAccountForSale` arma el vencimiento y asienta el libro del cliente cuando la venta deja saldo, y `ReverseAccountForCancelledSale` lo revierte al anular (y rechaza la anulación si ya hay cobros imputados). Lo único que el núcleo pregunta directamente es `Modules::enabled(CurrentAccount)` en `CreateSale`, para admitir cobros parciales o ninguno y exigir cliente y vencimiento cuando queda saldo. Cuotas propias suma una pregunta más, `Modules::enabled(Installments)`, para aceptar un plan de financiación (con su recargo y el mes de la primera cuota) en lugar del vencimiento único; el listener de Cuenta corriente arma una cuota por cada fila del cronograma de `InstallmentSchedule`.
 
+Control de caja sigue el mismo camino. `CreateSale` copia el `cash_session_id` que recibe (la Caja manda el turno abierto de su caja; «Nueva venta» lo ofrece para las ventas de mostrador) y `RegisterSaleInCashSession` valida que el turno esté abierto y que la venta sea de mostrador, deja los cobros en el turno y suma al cajón los de medios marcados como efectivo. Al anular, `CancelSale` pasa en el evento el turno del que sale la devolución si quien anula lo eligió, y `RefundCashForCancelledSale` registra la devolución en la caja abierta en ese momento. Una venta sin turno no toca ninguna caja, así que con el módulo encendido las ventas de las pruebas y de la demostración siguen igual.
+
+La **Caja** (pantalla de venta del mostrador) es un módulo y **Control de caja** lo requiere: un negocio puede tener la pantalla sin turnos ni arqueo, pero no turnos sin pantalla. Con la Caja apagada, el vendedor entra al escritorio y Configuración → Ticket no ofrece qué hacer al confirmar; el canal de venta y el ticket imprimible son del núcleo.
+
 Login con Google no escucha eventos de ventas: agrega rutas (`auth/google/*`, con `module:google-login`) y un botón por render hook en el login del panel del negocio (ver `docs/decisiones.md`).
 
 ## Cómo agregar un módulo

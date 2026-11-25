@@ -17,6 +17,7 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     resetModules();
+    Modules::enable(Module::PointOfSale);
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     $this->travelTo(now()->setDate(2026, 11, 24));
 
@@ -56,6 +57,19 @@ it('lleva al vendedor directo a la caja al ingresar y al administrador al escrit
 
     Livewire::test(Login::class)
         ->fillForm(['email' => $this->admin->email, 'password' => 'password'])
+        ->call('authenticate')
+        ->assertRedirect(Filament::getPanel('admin')->getUrl());
+});
+
+it('sin el módulo Caja la pantalla no existe y el vendedor entra al escritorio', function () {
+    Modules::disable(Module::PointOfSale);
+
+    $this->actingAs($this->seller)->get('http://'.config('domains.panel').'/caja')->assertNotFound();
+
+    auth()->logout();
+
+    Livewire::test(Login::class)
+        ->fillForm(['email' => $this->seller->email, 'password' => 'password'])
         ->call('authenticate')
         ->assertRedirect(Filament::getPanel('admin')->getUrl());
 });

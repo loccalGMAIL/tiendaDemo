@@ -5,7 +5,6 @@ use App\Filament\Concerns\RelationManagerBelongsToModule;
 use App\Filament\Concerns\WidgetBelongsToModule;
 use App\Filament\Pages\ColorSettings;
 use App\Filament\Pages\Dashboard;
-use App\Filament\Pages\PointOfSale;
 use App\Filament\Pages\SiteSettings;
 use App\Filament\Pages\StockCount;
 use App\Filament\Pages\TicketSettings;
@@ -52,8 +51,7 @@ const CORE_FILAMENT_CLASSES = [
     LatestSales::class,
     // Fase 5: contenido del sitio (siempre disponible para el administrador)
     SiteSettings::class,
-    // Fase 14: la Caja (venta de mostrador) y el formato de su ticket
-    PointOfSale::class,
+    // Fase 15: el formato del ticket de venta
     TicketSettings::class,
 ];
 

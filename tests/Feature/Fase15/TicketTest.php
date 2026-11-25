@@ -20,6 +20,7 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     resetModules();
+    Modules::enable(Module::PointOfSale);
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     $this->travelTo(now()->setDate(2026, 11, 25)->setTime(10, 30));
 
@@ -212,3 +213,16 @@ it('la caja imprime sola, pregunta o no hace nada según el formato', function (
     'preguntar' => ['ask', 'pos-ask-ticket'],
     'nunca' => ['never', null],
 ]);
+
+it('sin el módulo Caja no se ofrece qué hacer al confirmar en la caja', function () {
+    Modules::disable(Module::PointOfSale);
+
+    Livewire::actingAs($this->admin)
+        ->test(TicketSettings::class)
+        ->assertFormFieldIsHidden('print_on_confirm')
+        ->fillForm(['paper_width' => 58])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(app(SaleTicket::class)->settings())->toMatchArray(['paper_width' => 58, 'print_on_confirm' => 'ask']);
+});
