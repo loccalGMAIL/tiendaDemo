@@ -167,7 +167,7 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **Arqueo ciego opcional** (apagado por defecto): el vendedor no ve lo esperado ni la diferencia, ni al cerrar ni en el resumen impreso. El administrador ve todo en Turnos de caja.
 - **Retiros del vendedor opcionales** (apagado por defecto), siempre con motivo y sin pasar de lo que hay en el cajón. Los ingresos los hace cualquiera.
 - **Un turno cerrado no se reabre**: una corrección es un movimiento en otro turno. El administrador puede cerrar desde la ficha un turno que quedó abierto. Cerrar no pide el módulo, para no dejar turnos colgados si lo apagan.
-- **Cobros de cuenta corriente**: todavía no entran a la caja; llegan con la 0.22.0 (cobro desde la Caja).
+- **Cobros de cuenta corriente**: todavía no entran a la caja; mientras tanto, un cobro en efectivo en el mostrador se registra como ingreso. Cobrar desde la Caja y las ventas en espera quedan para una próxima versión.
 
 ## Entorno local
 

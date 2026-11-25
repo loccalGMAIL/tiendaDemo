@@ -16,7 +16,7 @@ Requiere migración: sí (`cash_registers`, `cash_sessions`, `cash_movements`; `
   - **Turnos de caja** (Ventas, administrador): listado con esperado, contado y diferencia, y ficha con el efectivo, los cobros por medio de pago, el conteo por billete y los movimientos. Se puede cerrar un turno que quedó abierto. **Resumen imprimible** en el rollo de la caja (`/caja/turnos/{turno}/imprimir`).
   - Ajustes del módulo (panel de la plataforma): arqueo ciego y retiros del vendedor, los dos apagados por defecto.
 - **Caja**: el foco vuelve al campo de búsqueda después de abrir la caja; antes, lo primero que se escaneaba se perdía.
-- Los cobros de cuenta corriente todavía no entran a la caja: llegan con la 0.22.0.
+- Fuera de esta entrega: los cobros de cuenta corriente todavía no entran a la caja (se registran como ingreso si se cobran en efectivo en el mostrador) y no hay ventas en espera. Quedan para una próxima versión.
 
 ## 0.20.0 (2026-11-25) — Ticket de venta
 
