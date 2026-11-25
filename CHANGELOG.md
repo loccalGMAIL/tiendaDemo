@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.21.0 (2026-11-25) — Control de caja
+
+Requiere migración: sí (`cash_registers`, `cash_sessions`, `cash_movements`; `payment_methods.is_cash`; `sales.cash_session_id` y `payments.cash_session_id`). Los medios de pago llamados «Efectivo» quedan marcados como efectivo. `db:seed` crea «Caja 1» si no hay ninguna.
+
+- **La Caja pasa a ser un módulo** («Caja»): sin él no aparece la pantalla del mostrador, el vendedor entra al escritorio y Configuración → Ticket no ofrece qué hacer al confirmar. El canal de venta y el ticket imprimible siguen en el núcleo. Al actualizar, encenderlo con `php artisan modules:enable point-of-sale` donde se use.
+- **Módulo Control de caja** (requiere Caja): cajas, turnos, apertura, ingresos y retiros, arqueo y cierre.
+  - **Cajas** (Configuración → Cajas, administrador): una o varias, con el rollo del ticket propio de cada una si hace falta. Con turnos no se borran: se desactivan.
+  - **En la Caja**: cada PC recuerda su caja (con varias, se elige al entrar). Si está cerrada, se abre con el **fondo inicial** (se propone lo que quedó en el último cierre). Arriba se ve la caja, el turno y quién la abrió, con **Ingreso o retiro (F8)**, **Estado de caja** y **Cerrar caja**. Sin turno abierto no se vende; si cierran la caja mientras se cobra, la venta no se confirma.
+  - **Lo cobrado con medios de efectivo entra al cajón**; los demás medios quedan en el turno para controlarlos contra los cupones. «Es efectivo» se marca en cada medio de pago.
+  - **Ingresos y retiros** siempre con motivo. Retira el administrador y, si se habilita, el vendedor; no se puede retirar más de lo que hay.
+  - **Cierre con arqueo**: lo contado a mano o **billete por billete** (con monedas), contra lo esperado: exacto, sobra o falta. Se indica el fondo que queda para el próximo turno. Con **arqueo ciego** el vendedor no ve lo esperado ni la diferencia. Al cerrar se ofrece imprimir el resumen.
+  - **Anulaciones**: el efectivo de una venta cobrada en una caja sale de la caja abierta en ese momento (la de la venta si sigue abierta, o la única abierta; con varias, se elige al anular). Sin ninguna abierta, la devolución queda fuera de caja.
+  - **«Nueva venta» de mostrador** puede entrar a una caja abierta (se propone la única abierta).
+  - **Turnos de caja** (Ventas, administrador): listado con esperado, contado y diferencia, y ficha con el efectivo, los cobros por medio de pago, el conteo por billete y los movimientos. Se puede cerrar un turno que quedó abierto. **Resumen imprimible** en el rollo de la caja (`/caja/turnos/{turno}/imprimir`).
+  - Ajustes del módulo (panel de la plataforma): arqueo ciego y retiros del vendedor, los dos apagados por defecto.
+- **Caja**: el foco vuelve al campo de búsqueda después de abrir la caja; antes, lo primero que se escaneaba se perdía.
+- Fuera de esta entrega: los cobros de cuenta corriente todavía no entran a la caja (se registran como ingreso si se cobran en efectivo en el mostrador) y no hay ventas en espera. Quedan para una próxima versión.
+
+## 0.20.0 (2026-11-25) — Ticket de venta
+
+Requiere migración: no (el formato se guarda en los ajustes de la instalación).
+
+- **Ticket para impresora térmica** de 58 u 80 mm: nombre del negocio, dirección y teléfono del sitio, líneas propias (CUIT, condición frente al IVA…), número, fecha y hora, vendedor, cliente, productos, subtotal, descuentos o recargos, total, cobros y, si se cobró en la Caja con «Paga con», lo entregado y el vuelto. Con saldo a cuenta, lo que queda y sus vencimientos. Una venta anulada sale marcada **ANULADA**.
+- **Configuración → Ticket** (solo administrador): ancho del papel, copias (hasta 3), encabezado, pie, qué datos se muestran (vendedor, cliente, código de cada producto, leyenda «No válido como factura») y qué hace la Caja al confirmar. Botón «Ver con la última venta». Cada cambio queda en Actividad.
+- **En la Caja**, al confirmar:
+  - **Preguntar** (por defecto): el foco queda en «Imprimir ticket»; Enter lo imprime y seguir escaneando pasa al próximo cliente sin imprimir.
+  - **Imprimir siempre**: se imprime solo.
+  - **No imprimir**: se puede imprimir después.
+  - **F9** imprime el ticket de la última venta en cualquier momento.
+- **Reimpresión** desde la vista de cada venta («Imprimir ticket»). El ticket lo ve quien puede ver la venta: el vendedor, las suyas.
+- **F12 con un código escrito sin Enter** lo agrega antes de abrir el cobro.
+- Imprime con el diálogo del navegador; con Chrome en modo `--kiosk-printing` imprime directo en la impresora predeterminada (ver README, «Caja e impresión de tickets»).
+- Nuevos: ruta `/ventas/{venta}/ticket` (`SaleTicketPrintController`), servicio `SaleTicket` y página `TicketSettings`.
+- Fuera de esta entrega: impresión ESC/POS sin navegador (sumaría una dependencia), ticket de cambio sin precios y ancho del papel por caja (llega con el control de caja).
+
+## 0.19.0 (2026-11-24) — Caja y canal de venta
+
+Requiere migración: sí (`sales.channel`; las ventas que ya existían quedan como Mostrador).
+
+- **Caja** (Ventas → Caja, también desde el escritorio): pantalla de venta de mostrador pensada para **teclado y lector de códigos**. Administradores y vendedores; **el vendedor entra directo a la Caja** al ingresar (también con Google).
+- **Un solo campo** recibe el código de la etiqueta, el SKU o parte del nombre, y se agrega con Enter. Con un código exacto o un único resultado se agrega solo; con varios se elige con ↑ ↓ y Enter. **`3*CODIGO`** suma tres unidades. Un código repetido suma una unidad a la línea.
+- **Ticket** con cantidades editables (+ y − en pantalla o con el teclado sobre la línea elegida, Supr para quitarla), existencia a la vista con el módulo Stock y el **total siempre visible**. El precio sale siempre del catálogo: la Caja no lo manda ni lo deja cambiar.
+- **Ventana de cobro (F12)**: un botón por medio de pago, con su recargo o descuento, que también se elige con la tecla del número. **«Paga con» y vuelto** en pantalla, con montos rápidos (el exacto y los billetes que alcanzan); si lo entregado no alcanza, la venta no se confirma. **Pago dividido**: cada medio cubre una parte y el último cubre lo que falta. Con Cuenta corriente, **saldo a cuenta** del cliente con vencimiento o, con Cuotas propias, plan de pago.
+- **Cliente (F4)**: búsqueda con alta rápida; por defecto, Consumidor final.
+- Al confirmar, la venta queda con canal **Mostrador**, fecha de hoy y el usuario como vendedor; se ve la última venta con su vuelto y el ticket queda vacío para el siguiente cliente. Si el foco se pierde, lo que llega del lector vuelve solo al campo.
+- **Canal de venta**: cada venta es de **Mostrador** u **Online**. «Nueva venta» queda para lo que se cierra a distancia (WhatsApp, redes) y propone Online. El listado de ventas y el informe «Ventas y ganancia» filtran por canal, y el informe suma el agrupamiento «Por canal».
+- El menú lateral del panel se puede achicar a íconos; la Caja lo achica al entrar para dejarle lugar al ticket.
+- Nuevos: página `PointOfSale`, servicio `Tender` (vuelto y montos rápidos), enum `SaleChannel`, `App\Http\Responses\LoginResponse`.
+- Próximas versiones: ticket imprimible configurable, control de caja (cajas, turnos, arqueo y cierre) como módulo, ventas en espera y cobros de cuenta corriente desde la Caja.
+
 ## 0.18.0 (2026-11-24) — Atributos de las variantes
 
 Requiere migración: no (los atributos ya se guardaban en los ajustes del módulo Variantes).

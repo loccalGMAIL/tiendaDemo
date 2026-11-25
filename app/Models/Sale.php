@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SaleChannel;
 use App\Enums\SaleStatus;
 use Database\Factories\SaleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * LogsActivity porque registra sus eventos (alta y anulación) de forma explícita.
  */
 #[Fillable([
-    'customer_id', 'seller_id', 'date', 'subtotal', 'adjustment', 'total', 'total_cost',
+    'customer_id', 'seller_id', 'channel', 'cash_session_id', 'date', 'subtotal', 'adjustment', 'total', 'total_cost',
     'down_payment', 'financed_amount', 'financing_surcharge', 'financing_surcharge_percent',
     'financing_plan_id', 'installments_count', 'first_due_date',
     'status', 'notes',
@@ -42,6 +43,7 @@ class Sale extends Model
             'financing_surcharge' => 'decimal:2',
             'financing_surcharge_percent' => 'decimal:2',
             'financed_amount' => 'decimal:2',
+            'channel' => SaleChannel::class,
             'status' => SaleStatus::class,
             'cancelled_at' => 'datetime',
         ];
@@ -130,6 +132,16 @@ class Sale extends Model
     public function installments(): HasMany
     {
         return $this->hasMany(Installment::class)->orderBy('number');
+    }
+
+    /**
+     * Turno de caja en que se cobró (módulo Control de caja); vacío si no pasó por una caja.
+     *
+     * @return BelongsTo<CashSession, $this>
+     */
+    public function cashSession(): BelongsTo
+    {
+        return $this->belongsTo(CashSession::class);
     }
 
     /**

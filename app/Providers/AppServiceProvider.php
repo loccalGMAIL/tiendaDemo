@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Enums\Module;
+use App\Http\Responses\LoginResponse;
 use App\Services\Modules;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Resources\Resource;
 use Filament\Support\Facades\FilamentView;
 use Filament\Support\Icons\Heroicon;
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Modules::class);
+
+        // El vendedor entra directo a la Caja (ver App\Http\Responses\LoginResponse).
+        $this->app->bind(LoginResponseContract::class, LoginResponse::class);
     }
 
     /**

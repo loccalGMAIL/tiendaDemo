@@ -7,6 +7,7 @@ use App\Filament\Pages\ColorSettings;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SiteSettings;
 use App\Filament\Pages\StockCount;
+use App\Filament\Pages\TicketSettings;
 use App\Filament\Pages\VariantAttributes;
 use App\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Filament\Resources\Categories\CategoryResource;
@@ -50,6 +51,8 @@ const CORE_FILAMENT_CLASSES = [
     LatestSales::class,
     // Fase 5: contenido del sitio (siempre disponible para el administrador)
     SiteSettings::class,
+    // Fase 15: el formato del ticket de venta
+    TicketSettings::class,
 ];
 
 /**

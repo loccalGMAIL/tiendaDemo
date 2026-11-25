@@ -22,10 +22,13 @@ class CancelSale
     public function __construct(private ActivityLogger $logger) {}
 
     /**
+     * @param  int|null  $refundCashSessionId  Turno de caja del que sale el efectivo a devolver
+     *                                         (módulo Control de caja); si no se indica, lo decide el módulo.
+     *
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function handle(Sale $sale, User $actor, string $reason): Sale
+    public function handle(Sale $sale, User $actor, string $reason, ?int $refundCashSessionId = null): Sale
     {
         if (! $actor->isAdmin()) {
             throw new AuthorizationException('Solo un administrador puede anular ventas.');
@@ -37,7 +40,7 @@ class CancelSale
             throw ValidationException::withMessages(['reason' => 'El motivo de la anulación es obligatorio.']);
         }
 
-        $cancelled = DB::transaction(function () use ($sale, $actor, $reason): Sale {
+        $cancelled = DB::transaction(function () use ($sale, $actor, $reason, $refundCashSessionId): Sale {
             $locked = Sale::query()->lockForUpdate()->findOrFail($sale->getKey());
 
             if ($locked->isCancelled()) {
@@ -70,7 +73,7 @@ class CancelSale
             );
 
             // Dentro de la transacción: los módulos revierten sus efectos junto con la venta.
-            SaleCancelled::dispatch($locked, $actor);
+            SaleCancelled::dispatch($locked, $actor, $refundCashSessionId);
 
             return $locked;
         });

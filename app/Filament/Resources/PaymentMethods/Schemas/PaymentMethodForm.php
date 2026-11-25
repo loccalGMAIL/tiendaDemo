@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\PaymentMethods\Schemas;
 
+use App\Enums\Module;
+use App\Facades\Modules;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -40,6 +42,11 @@ class PaymentMethodForm
                 ->integer()
                 ->minValue(0)
                 ->default(0),
+            // Módulo Control de caja: lo cobrado con este medio entra al cajón y cuenta en el arqueo.
+            Toggle::make('is_cash')
+                ->label('Es efectivo (entra al cajón)')
+                ->helperText('Lo cobrado con este medio se suma a la caja abierta y cuenta en el arqueo.')
+                ->visible(fn (): bool => Modules::enabled(Module::CashControl)),
             Toggle::make('active')
                 ->label('Activo')
                 ->default(true),

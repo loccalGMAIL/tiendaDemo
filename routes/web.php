@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\BarcodeLabelsPrintController;
+use App\Http\Controllers\CashSessionPrintController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PurchaseOrderPrintController;
 use App\Http\Controllers\ReportPrintController;
+use App\Http\Controllers\SaleTicketPrintController;
 use Illuminate\Support\Facades\Route;
 
 // Cualquier host que no sea uno de los tres de config/domains.php responde 404.
@@ -32,6 +34,19 @@ Route::domain(config('domains.panel'))
         Route::get('redirect', [GoogleLoginController::class, 'redirect'])->name('auth.google.redirect');
         Route::get('callback', [GoogleLoginController::class, 'callback'])->name('auth.google.callback');
     });
+
+// Ticket de una venta (núcleo): lo ve quien puede ver la venta; el vendedor, las suyas.
+Route::domain(config('domains.panel'))
+    ->get('/ventas/{sale}/ticket', SaleTicketPrintController::class)
+    ->whereNumber('sale')
+    ->name('sales.ticket');
+
+// Resumen de un turno de caja (módulo Control de caja): con el módulo apagado responde 404.
+Route::domain(config('domains.panel'))
+    ->middleware('module:cash-control')
+    ->get('/caja/turnos/{session}/imprimir', CashSessionPrintController::class)
+    ->whereNumber('session')
+    ->name('cash-sessions.print');
 
 // Orden de compra imprimible (módulo Compras): con el módulo apagado responde 404; solo administradores.
 Route::domain(config('domains.panel'))

@@ -21,6 +21,8 @@ class SalesReportPage extends ReportPage
 
     public ?int $sellerId = null;
 
+    public string $channel = '';
+
     public string $group = 'detail';
 
     public function reportKey(): string
@@ -35,7 +37,7 @@ class SalesReportPage extends ReportPage
 
     public function filters(): array
     {
-        return ['from' => $this->from, 'to' => $this->to, 'seller_id' => $this->sellerId, 'group' => $this->group];
+        return ['from' => $this->from, 'to' => $this->to, 'seller_id' => $this->sellerId, 'channel' => $this->channel, 'group' => $this->group];
     }
 
     public function result(): array

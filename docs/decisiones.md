@@ -135,6 +135,40 @@ Respuestas a las preguntas obligatorias, registradas el 2026-11-16.
 - **La matriz de autorización es la red de seguridad**: toda ruta nueva tiene que declarar quién entra, o la prueba falla.
 - **Mutation testing pendiente**: hace falta un driver de cobertura (xdebug o pcov) que este PHP no tiene.
 
+## Decisiones de diseño (Caja, 0.19.0)
+
+- **La Caja es un módulo** (desde 0.21.0): no todos los negocios venden en un mostrador con lector. El control de caja (turnos, arqueo y cierre) es otro módulo que la requiere. El canal de venta y el ticket quedan en el núcleo porque también sirven para «Nueva venta».
+- **Conviven la Caja y «Nueva venta»**: la Caja es para el mostrador (teclado y lector, sin fecha ni vendedor para elegir); el formulario queda para lo que se cierra a distancia y para cargas con otra fecha o vendedor.
+- **Misma acción que el formulario** (`CreateSale`): las reglas de la venta, los eventos (stock, cuenta corriente) y los errores son los mismos. La Caja solo arma el pedido.
+- **El ticket guarda variante y cantidad**; descripción, precio y existencia se leen del catálogo en cada pantalla. Así no se pueden alterar desde el navegador y un cambio de precio se ve antes de cobrar.
+- **El campo único no usa `wire:model`**: el valor se toma y se limpia en el navegador antes de mandarlo, para que una respuesta del servidor no borre lo que el lector está escribiendo.
+- **Primero el código exacto, después el texto**: el SKU de la etiqueta gana; si no es un código vendible (por ejemplo, el de un producto con variantes) se busca por texto y se ofrecen sus variantes.
+- **«Paga con» aplica al último medio de pago**: con un solo medio es el de toda la venta; con el pago dividido, el último es el que cubre lo que falta, que es el que suele pagarse en efectivo. El vuelto no se guarda todavía: llegará con el control de caja.
+- **Canal de venta en la venta** (`sales.channel`, Mostrador u Online). Las ventas anteriores quedan como Mostrador. Prepara el control de caja (solo el mostrador pasa por el cajón) y el futuro carrito del catálogo, que creará ventas online.
+- **El vendedor entra a la Caja** con un `LoginResponse` propio (también lo usa el login con Google). Si venía de una página puntual, vuelve a esa.
+
+## Decisiones de diseño (Ticket, 0.20.0)
+
+- **HTML con estilos de impresión**, como las órdenes de compra y las etiquetas: sin librería de PDF ni dependencias. `@page` fija el ancho del rollo y el contenido usa el área imprimible (48 mm en 58, 72 mm en 80).
+- **La Caja imprime con un marco invisible** que carga el ticket con `?imprimir=1` y abre su diálogo; así la pantalla de venta no se mueve. Con Chrome `--kiosk-printing` no hay diálogo. Imprimir sin navegador (ESC/POS, QZ Tray) queda para cuando haga falta: suma una dependencia.
+- **«Paga con» viaja en el enlace** (`?pago=`) y no se guarda: es un dato del momento. Se muestra solo si alcanza para el último cobro. Cuando llegue el control de caja, el vuelto quedará registrado en el turno.
+- **El ticket lo ve quien puede ver la venta** (`SalePolicy::view`), y un usuario desactivado no, como en las otras impresiones.
+- **Preguntar es el modo por defecto**: no gasta papel si el cliente no lo quiere y no frena al cajero, porque seguir escaneando descarta la pregunta.
+- **Formato del ticket en los ajustes de la instalación** (`settings.ticket`), normalizado al guardar: un ancho o un modo desconocido vuelve al valor por defecto.
+
+## Decisiones de diseño (Control de caja, 0.21.0)
+
+- **Dos módulos**: Caja (la pantalla) y Control de caja (turnos), que requiere Caja. Así se puede vender en el mostrador sin arqueo.
+- **Libro de efectivo por turno** (`cash_movements`), inmutable y con signo, como la cuenta corriente: lo esperado en el cajón es la suma. Solo entra el efectivo; los demás medios del turno se resumen desde los cobros (`payments.cash_session_id`) para controlarlos contra los cupones.
+- **El medio de pago dice si es efectivo** (`payment_methods.is_cash`). La migración marca los que se llaman «Efectivo».
+- **Varias personas por caja**: un turno por caja, abierto por quien llega; cada venta conserva su vendedor. La PC recuerda su caja con una cookie.
+- **El núcleo no conoce las cajas**: `CreateSale` copia el turno y `SaleCancelled` lleva el turno elegido para la devolución; los listeners del módulo validan y registran. Una venta sin turno no toca ninguna caja, por eso el módulo no exige turno en `CreateSale` (sí la pantalla Caja).
+- **Anular devuelve desde la caja abierta en ese momento** (lo decidido con el negocio): la elegida, o el turno de la venta si sigue abierto, o la única abierta. Con varias abiertas hay que elegir; sin ninguna, la devolución queda fuera de caja y la anulación sigue.
+- **Arqueo ciego opcional** (apagado por defecto): el vendedor no ve lo esperado ni la diferencia, ni al cerrar ni en el resumen impreso. El administrador ve todo en Turnos de caja.
+- **Retiros del vendedor opcionales** (apagado por defecto), siempre con motivo y sin pasar de lo que hay en el cajón. Los ingresos los hace cualquiera.
+- **Un turno cerrado no se reabre**: una corrección es un movimiento en otro turno. El administrador puede cerrar desde la ficha un turno que quedó abierto. Cerrar no pide el módulo, para no dejar turnos colgados si lo apagan.
+- **Cobros de cuenta corriente**: todavía no entran a la caja; mientras tanto, un cobro en efectivo en el mostrador se registra como ingreso. Cobrar desde la Caja y las ventas en espera quedan para una próxima versión.
+
 ## Entorno local
 
 - PHP 8.3.30 (Laragon), Composer 2.10, Node 24, MySQL 8.4.3 (Laragon).

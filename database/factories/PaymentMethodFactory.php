@@ -19,6 +19,7 @@ class PaymentMethodFactory extends Factory
             'name' => fake()->unique()->words(2, true),
             'installments' => 1,
             'adjustment_percent' => '0.00',
+            'is_cash' => false,
             'active' => true,
             'position' => 0,
         ];
@@ -27,6 +28,14 @@ class PaymentMethodFactory extends Factory
     public function withAdjustment(string $percent, int $installments = 1): static
     {
         return $this->state(fn () => ['adjustment_percent' => $percent, 'installments' => $installments]);
+    }
+
+    /**
+     * Entra al cajón (módulo Control de caja).
+     */
+    public function cash(): static
+    {
+        return $this->state(fn () => ['is_cash' => true]);
     }
 
     public function inactive(): static

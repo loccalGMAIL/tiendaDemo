@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Sales\Tables;
 
+use App\Enums\SaleChannel;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\User;
@@ -36,6 +37,10 @@ class SalesTable
                 TextColumn::make('seller.name')
                     ->label('Vendedor')
                     ->sortable(),
+                TextColumn::make('channel')
+                    ->label('Canal')
+                    ->badge()
+                    ->toggleable(),
                 TextColumn::make('total')
                     ->label('Total')
                     ->money('ARS', locale: 'es_AR')
@@ -49,6 +54,9 @@ class SalesTable
                 SelectFilter::make('status')
                     ->label('Estado')
                     ->options(SaleStatus::class),
+                SelectFilter::make('channel')
+                    ->label('Canal')
+                    ->options(SaleChannel::class),
                 SelectFilter::make('seller_id')
                     ->label('Vendedor')
                     // El SuperAdmin no aparece; el vendedor ya ve solo lo suyo.
