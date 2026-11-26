@@ -8,6 +8,7 @@ use App\Facades\Modules;
 use App\Filament\Concerns\BelongsToModule;
 use App\Http\Controllers\BarcodeLabelsPrintController;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\Barcodes\LabelLayout;
 use BackedEnum;
@@ -226,6 +227,28 @@ class BarcodeLabels extends AdministratorPage
         }
 
         return static::getUrl(['v' => implode(',', $pairs)]);
+    }
+
+    /**
+     * Etiquetas de un producto recién creado: una por unidad del stock inicial (mínimo una)
+     * o una por variante, según `labels_on_create_quantity`.
+     *
+     * @return array<int, int> variante => cantidad
+     */
+    public static function selectionForNewProduct(Product $product): array
+    {
+        $byStock = Modules::enabled(Module::Stock)
+            && Modules::setting(Module::Barcodes, 'labels_on_create_quantity', 'stock') === 'stock';
+
+        return $product->variants()
+            ->sellable()
+            ->get()
+            ->mapWithKeys(fn (ProductVariant $variant): array => [
+                $variant->getKey() => $byStock
+                    ? min(BarcodeLabelsPrintController::MAX_PER_VARIANT, max(1, $variant->stock))
+                    : 1,
+            ])
+            ->all();
     }
 
     /**
