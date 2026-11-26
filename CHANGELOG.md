@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.22.0 (2026-11-26) — Carga de productos en un solo paso
+
+Requiere migración: no. Los ajustes nuevos del módulo Códigos de barras toman su valor por defecto.
+
+- **Variantes y stock desde el alta**: Productos → Nuevo tiene la pestaña **Variantes y stock**. Se eligen los valores de cada atributo, se arma la grilla de combinaciones y en cada fila se carga el **stock inicial**, el mínimo y, si hace falta, un precio propio. Al cambiar la selección se conservan las cantidades ya escritas. Sin valores elegidos, el producto se crea sin variantes.
+- **Producto simple**: ahora también tiene su **stock inicial** y su mínimo en el alta (antes no había dónde cargarlos).
+- **Carga inicial**: el stock cargado en el alta queda en Movimientos de stock como «Carga inicial», a nombre de quien lo cargó. Solo con el módulo Stock encendido.
+- **Etiquetas en el mismo acto** (módulo Códigos de barras, configurable en el panel de la plataforma):
+  - *Etiquetas al crear un producto*: ofrecer una casilla en el alta (por defecto), imprimir siempre o no ofrecerlas.
+  - *Cantidad*: una por cada unidad del stock inicial (por defecto, mínimo una) o una por variante.
+  - Al guardar, se abre Etiquetas con las variantes del producto nuevo ya cargadas, listas para imprimir.
+- «Generar variantes» de la edición sigue igual y comparte con el alta la lista de atributos.
+
 ## 0.21.0 (2026-11-25) — Control de caja
 
 Requiere migración: sí (`cash_registers`, `cash_sessions`, `cash_movements`; `payment_methods.is_cash`; `sales.cash_session_id` y `payments.cash_session_id`). Los medios de pago llamados «Efectivo» quedan marcados como efectivo. `db:seed` crea «Caja 1» si no hay ninguna.
