@@ -35,7 +35,7 @@
         }
         .label .business { font-size: 0.8em; color: #333; }
         .label .name { font-weight: 700; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .label .variant { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .label .variant { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .label .price { font-weight: 700; font-size: 1.15em; }
         .label svg { display: block; margin: 0.4mm 0; max-width: 100%; }
         .label .code { font-family: ui-monospace, Consolas, monospace; font-size: 0.85em; letter-spacing: 0.04em; }

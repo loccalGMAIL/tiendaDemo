@@ -66,6 +66,24 @@ it('sin sesión la impresión manda al login', function () {
 
 // --- Impresión -------------------------------------------------------------
 
+it('la etiqueta nombra cada atributo de la variante («Talle: M / Color: Negro»)', function () {
+    $variant = ProductVariant::factory()->create([
+        'product_id' => $this->product->id,
+        'name' => 'S / Blanco',
+        'attributes' => ['Talle' => 'S', 'Color' => 'Blanco'],
+        'sku' => 'REM-1-SB',
+    ]);
+
+    expect($variant->attributesLabel())->toBe('Talle: S / Color: Blanco')
+        ->and($this->variantM->attributesLabel())->toBe('M / Negro')
+        ->and($this->simpleVariant->attributesLabel())->toBeNull();
+
+    $this->actingAs($this->admin)
+        ->get($this->panel.'/etiquetas/imprimir?v='.$variant->id.':1')
+        ->assertOk()
+        ->assertSee('Talle: S / Color: Blanco');
+});
+
 it('imprime una etiqueta por cantidad pedida, con su código de barras y el formato de rollo', function () {
     $response = $this->actingAs($this->admin)
         ->get($this->panel.'/etiquetas/imprimir?v='.$this->variantM->id.':3,'.$this->simpleVariant->id.':1')

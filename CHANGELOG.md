@@ -11,6 +11,7 @@ Requiere migración: no. Los ajustes nuevos del módulo Códigos de barras toman
   - *Etiquetas al crear un producto*: ofrecer una casilla en el alta (por defecto), imprimir siempre o no ofrecerlas.
   - *Cantidad*: una por cada unidad del stock inicial (por defecto, mínimo una) o una por variante.
   - Al guardar, se abre Etiquetas con las variantes del producto nuevo ya cargadas, listas para imprimir.
+- **Etiquetas con el nombre del atributo**: la variante se imprime como «Talle: M / Color: Negro» (con el nombre de cada atributo). Las variantes cargadas a mano, sin atributos, siguen mostrando su nombre. La línea puede ocupar dos renglones en lugar de cortarse.
 - «Generar variantes» de la edición sigue igual y comparte con el alta la lista de atributos.
 
 ## 0.21.0 (2026-11-25) — Control de caja

@@ -73,7 +73,7 @@ class BarcodeLabelsPrintController extends Controller
 
             $label = [
                 'product' => $variant->product->name,
-                'variant' => $variant->isImplicit() ? null : $variant->name,
+                'variant' => $variant->attributesLabel(),
                 'price' => $layout->showPrice ? Money::format($variant->effectivePrice()) : null,
                 'code' => $code,
                 'svg' => $svg->render($code, $barHeight, $layout->width - 2 * $padding),
