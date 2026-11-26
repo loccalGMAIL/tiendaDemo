@@ -125,6 +125,8 @@ enum Module: string implements HasLabel
                 'gap_y' => 0,
                 'show_price' => true,
                 'show_business' => false,
+                'labels_on_create' => 'ask',
+                'labels_on_create_quantity' => 'stock',
             ],
             self::CashControl => [
                 'blind_count' => false,

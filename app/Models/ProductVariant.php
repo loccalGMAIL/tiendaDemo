@@ -145,6 +145,27 @@ class ProductVariant extends Model
     }
 
     /**
+     * "Talle: M / Color: Negro" con el nombre de cada atributo; si la variante no tiene
+     * atributos (cargada a mano) queda su nombre. Null para la variante implícita.
+     */
+    public function attributesLabel(): ?string
+    {
+        if ($this->isImplicit()) {
+            return null;
+        }
+
+        $attributes = $this->getAttribute('attributes');
+
+        if (! is_array($attributes) || $attributes === []) {
+            return $this->name;
+        }
+
+        return collect($attributes)
+            ->map(fn ($value, $attribute): string => "{$attribute}: {$value}")
+            ->implode(' / ');
+    }
+
+    /**
      * "Remera lisa — M / Negro", o solo el nombre del producto para la variante implícita.
      */
     public function fullName(): string

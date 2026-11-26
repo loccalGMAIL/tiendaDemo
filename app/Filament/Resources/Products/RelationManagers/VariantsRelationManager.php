@@ -8,6 +8,7 @@ use App\Enums\Module;
 use App\Facades\Modules;
 use App\Filament\Concerns\RelationManagerBelongsToModule;
 use App\Filament\Pages\BarcodeLabels;
+use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -254,18 +255,7 @@ class VariantsRelationManager extends RelationManager
      */
     private function attributes(): array
     {
-        $attributes = [];
-
-        foreach ((array) Modules::setting(Module::Variants, 'attributes', []) as $attribute) {
-            $name = (string) ($attribute['name'] ?? '');
-            $values = array_values(array_map('strval', (array) ($attribute['values'] ?? [])));
-
-            if ($name !== '' && $values !== []) {
-                $attributes[] = ['name' => $name, 'values' => $values];
-            }
-        }
-
-        return $attributes;
+        return ProductForm::variantAttributes();
     }
 
     private function productOwner(): Product

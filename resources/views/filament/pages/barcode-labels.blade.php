@@ -1,32 +1,38 @@
 <x-filament-panels::page>
     @php
         $variants = $this->getVariants();
-        $total = $this->getTotal();
+        $total = $this->isScoped() ? $variants->count() : $this->getTotal();
         $layout = $this->labelLayout();
         $labels = $this->getTotalLabels();
         $withoutCode = $this->getWithoutCodeCount();
         $withStock = \App\Facades\Modules::enabled(\App\Enums\Module::Stock);
     @endphp
 
-    <div class="grid gap-4 md:grid-cols-3">
-        <div>
-            <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="labels-search">Buscar producto</label>
-            <x-filament::input.wrapper>
-                <x-filament::input id="labels-search" type="search" placeholder="Nombre, SKU o variante" wire:model.live.debounce.300ms="search" />
-            </x-filament::input.wrapper>
-        </div>
+    @if ($this->isScoped())
+        <h2 class="text-lg font-semibold">{{ $this->getScopeTitle() }}</h2>
+    @endif
 
-        <div>
-            <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="labels-category">Categoría</label>
-            <x-filament::input.wrapper>
-                <x-filament::input.select id="labels-category" wire:model.live="categoryId">
-                    <option value="">Todas</option>
-                    @foreach ($this->getCategories() as $id => $name)
-                        <option value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
-                </x-filament::input.select>
-            </x-filament::input.wrapper>
-        </div>
+    <div class="grid gap-4 md:grid-cols-3">
+        @unless ($this->isScoped())
+            <div>
+                <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="labels-search">Buscar producto</label>
+                <x-filament::input.wrapper>
+                    <x-filament::input id="labels-search" type="search" placeholder="Nombre, SKU o variante" wire:model.live.debounce.300ms="search" />
+                </x-filament::input.wrapper>
+            </div>
+
+            <div>
+                <label class="fi-fo-field-label-content mb-1 block text-sm font-medium" for="labels-category">Categoría</label>
+                <x-filament::input.wrapper>
+                    <x-filament::input.select id="labels-category" wire:model.live="categoryId">
+                        <option value="">Todas</option>
+                        @foreach ($this->getCategories() as $id => $name)
+                            <option value="{{ $id }}">{{ $name }}</option>
+                        @endforeach
+                    </x-filament::input.select>
+                </x-filament::input.wrapper>
+            </div>
+        @endunless
 
         @if ($layout->isSheet())
             <div>
@@ -99,7 +105,7 @@
             </table>
         </div>
 
-        @if ($total > $variants->count())
+        @if (! $this->isScoped() && $total > $variants->count())
             <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
                 Mostrando {{ $variants->count() }} de {{ $total }} variantes. Filtrá por categoría o buscá para ver el resto.
             </p>

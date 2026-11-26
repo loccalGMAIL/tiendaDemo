@@ -66,6 +66,24 @@ it('sin sesión la impresión manda al login', function () {
 
 // --- Impresión -------------------------------------------------------------
 
+it('la etiqueta nombra cada atributo de la variante («Talle: M / Color: Negro»)', function () {
+    $variant = ProductVariant::factory()->create([
+        'product_id' => $this->product->id,
+        'name' => 'S / Blanco',
+        'attributes' => ['Talle' => 'S', 'Color' => 'Blanco'],
+        'sku' => 'REM-1-SB',
+    ]);
+
+    expect($variant->attributesLabel())->toBe('Talle: S / Color: Blanco')
+        ->and($this->variantM->attributesLabel())->toBe('M / Negro')
+        ->and($this->simpleVariant->attributesLabel())->toBeNull();
+
+    $this->actingAs($this->admin)
+        ->get($this->panel.'/etiquetas/imprimir?v='.$variant->id.':1')
+        ->assertOk()
+        ->assertSee('Talle: S / Color: Blanco');
+});
+
 it('imprime una etiqueta por cantidad pedida, con su código de barras y el formato de rollo', function () {
     $response = $this->actingAs($this->admin)
         ->get($this->panel.'/etiquetas/imprimir?v='.$this->variantM->id.':3,'.$this->simpleVariant->id.':1')
@@ -228,6 +246,46 @@ it('la página llega con la selección cargada y arma el enlace de impresión', 
     expect($component->instance()->getTotalLabels())->toBe(3)
         ->and($component->instance()->getPrintUrl())->toContain('/etiquetas/imprimir')
         ->and($component->instance()->getPrintUrl())->toContain(rawurlencode($this->variantM->id.':2'));
+});
+
+it('al entrar con una selección muestra solo esas variantes, sin búsqueda ni categoría', function () {
+    $component = Livewire::actingAs($this->admin)
+        ->withQueryParams(['v' => $this->variantM->id.':2,'.$this->variantL->id.':1'])
+        ->test(BarcodeLabels::class);
+
+    expect($component->instance()->isScoped())->toBeTrue()
+        ->and($component->instance()->getVariants()->modelKeys())->toBe([$this->variantM->id, $this->variantL->id])
+        ->and($component->instance()->getScopeTitle())->toBe('Etiquetas de Remera lisa');
+
+    $component->assertSee('Etiquetas de Remera lisa')
+        ->assertDontSee('Cinturón')
+        ->assertDontSee('Buscar producto');
+
+    // «Limpiar» vacía las cantidades, pero la lista sigue siendo la del producto.
+    $component->call('clearQuantities');
+
+    expect($component->instance()->getVariants()->modelKeys())->toBe([$this->variantM->id, $this->variantL->id]);
+
+    $component->call('oneOfEach');
+
+    expect($component->instance()->getRequested())->toBe([$this->variantM->id => 1, $this->variantL->id => 1]);
+});
+
+it('con varios productos seleccionados el título es general, y sin selección lista todo', function () {
+    $several = Livewire::actingAs($this->admin)
+        ->withQueryParams(['v' => $this->variantM->id.':1,'.$this->simpleVariant->id.':1'])
+        ->test(BarcodeLabels::class);
+
+    expect($several->instance()->getScopeTitle())->toBe('Etiquetas seleccionadas')
+        ->and($several->instance()->getVariants())->toHaveCount(2);
+
+    $all = Livewire::actingAs($this->admin)->withQueryParams([])->test(BarcodeLabels::class);
+
+    expect($all->instance()->isScoped())->toBeFalse()
+        ->and($all->instance()->getScopeTitle())->toBeNull()
+        ->and($all->instance()->getVariants()->count())->toBeGreaterThanOrEqual(3);
+
+    $all->assertSee('Buscar producto');
 });
 
 it('«1 de cada una» y «Limpiar» cargan y vacían las cantidades', function () {

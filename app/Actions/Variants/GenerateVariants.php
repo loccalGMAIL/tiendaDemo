@@ -73,6 +73,22 @@ class GenerateVariants
     }
 
     /**
+     * Combinaciones de los valores elegidos, validados contra los atributos del módulo.
+     * Sin ningún valor elegido devuelve una lista vacía.
+     *
+     * @param  array<string, array<int, string>>  $selection  atributo => valores elegidos
+     * @return list<array<string, string>>
+     *
+     * @throws ValidationException
+     */
+    public function combinationsFor(array $selection): array
+    {
+        $axes = $this->axes($selection);
+
+        return $axes === [] ? [] : $this->combinations($axes);
+    }
+
+    /**
      * Valida la selección contra los atributos configurados y la ordena como en el módulo.
      *
      * @param  array<string, array<int, string>>  $selection
@@ -141,7 +157,7 @@ class GenerateVariants
      *
      * @param  array<string, string>  $attributes
      */
-    private function signature(array $attributes): string
+    public function signature(array $attributes): string
     {
         ksort($attributes);
 

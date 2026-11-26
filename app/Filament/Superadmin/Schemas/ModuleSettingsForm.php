@@ -169,6 +169,24 @@ class ModuleSettingsForm
             $measure('gap_y', 'Separación vertical', 0, 50)->visible($isSheet),
             Toggle::make('show_price')->label('Mostrar el precio'),
             Toggle::make('show_business')->label('Mostrar el nombre del negocio'),
+            Select::make('labels_on_create')
+                ->label('Etiquetas al crear un producto')
+                ->options([
+                    'ask' => 'Ofrecer imprimirlas (casilla en el alta)',
+                    'always' => 'Imprimirlas siempre al guardar',
+                    'off' => 'No ofrecerlas',
+                ])
+                ->required()
+                ->native(false)
+                ->helperText('Al guardar un producto nuevo se abre Etiquetas con sus variantes ya cargadas.'),
+            Select::make('labels_on_create_quantity')
+                ->label('Cantidad de etiquetas del alta')
+                ->options([
+                    'stock' => 'Una por cada unidad del stock inicial',
+                    'one' => 'Una por variante',
+                ])
+                ->required()
+                ->native(false),
         ];
     }
 }
