@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 
 /**
@@ -55,6 +56,10 @@ class BarcodeLabels extends AdministratorPage
     /** Posición de la primera etiqueta en la hoja (solo hojas con varias etiquetas). */
     public int $startAt = 1;
 
+    /** @var array<int, int> variantes de la selección con la que se entró (vacío = todas) */
+    #[Locked]
+    public array $scope = [];
+
     /** @var array<int|string, string|null> variante => cantidad de etiquetas */
     public array $quantities = [];
 
@@ -67,9 +72,38 @@ class BarcodeLabels extends AdministratorPage
     {
         foreach (BarcodeLabelsPrintController::parseSelection($this->selection) as $id => $quantity) {
             $this->quantities[$id] = (string) $quantity;
+            $this->scope[] = $id;
         }
 
         $this->selection = '';
+    }
+
+    /**
+     * Cuando se llega con una selección (desde un producto, una compra o el alta) la página
+     * muestra solo esas variantes; sin selección, el listado completo con sus filtros.
+     */
+    public function isScoped(): bool
+    {
+        return $this->scope !== [];
+    }
+
+    /**
+     * Título de la selección: el producto, o un texto general si son varios.
+     */
+    public function getScopeTitle(): ?string
+    {
+        if (! $this->isScoped()) {
+            return null;
+        }
+
+        $names = ProductVariant::query()
+            ->with('product')
+            ->whereIn('id', $this->scope)
+            ->get()
+            ->map(fn (ProductVariant $variant): string => $variant->product->name)
+            ->unique();
+
+        return $names->count() === 1 ? "Etiquetas de {$names->first()}" : 'Etiquetas seleccionadas';
     }
 
     /**
@@ -79,6 +113,16 @@ class BarcodeLabels extends AdministratorPage
      */
     public function getVariants(): Collection
     {
+        if ($this->isScoped()) {
+            return ProductVariant::query()
+                ->with('product.category')
+                ->whereIn('id', $this->scope)
+                ->orderBy('product_id')
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get();
+        }
+
         $chosen = array_keys($this->quantities);
 
         $filtered = $this->variantsQuery()->limit(self::LIMIT)->get();
@@ -150,6 +194,7 @@ class BarcodeLabels extends AdministratorPage
     public function getWithoutCodeCount(): int
     {
         return ProductVariant::query()
+            ->when($this->isScoped(), fn (Builder $query) => $query->whereIn('id', $this->scope))
             ->where('name', '!=', '')
             ->where(fn (Builder $query) => $query->whereNull('sku')->orWhere('sku', ''))
             ->count();

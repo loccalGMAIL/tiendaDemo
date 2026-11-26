@@ -48,6 +48,76 @@ it('crea las variantes elegidas con su stock inicial en un solo paso', function 
         ->and($named->every(fn ($variant) => filled($variant->sku)))->toBeTrue();
 });
 
+it('el precio propio y el stock mínimo son opcionales: sin pedirlos se descartan', function () {
+    $product = app(CreateProduct::class)->handle([...$this->data, 'custom_prices' => false, 'track_min_stock' => false, 'variants' => [
+        ['attributes' => ['Talle' => 'S'], 'price' => '1200.00', 'initial_stock' => 3, 'min_stock' => 2],
+    ]]);
+
+    $variant = $product->variants()->where('name', 'S')->firstOrFail();
+
+    expect($variant->price)->toBeNull()
+        ->and($variant->min_stock)->toBe(0)
+        ->and($variant->stock)->toBe(3);
+});
+
+it('pidiéndolos, el precio propio y el stock mínimo se guardan', function () {
+    $product = app(CreateProduct::class)->handle([...$this->data, 'custom_prices' => true, 'track_min_stock' => true, 'variants' => [
+        ['attributes' => ['Talle' => 'S'], 'price' => '1200.00', 'initial_stock' => 3, 'min_stock' => 2],
+    ]]);
+
+    $variant = $product->variants()->where('name', 'S')->firstOrFail();
+
+    expect($variant->price)->toBe('1200.00')
+        ->and($variant->min_stock)->toBe(2);
+});
+
+it('el stock mínimo del producto simple solo se guarda si se pide', function () {
+    $without = app(CreateProduct::class)->handle([...$this->data, 'track_min_stock' => false, 'initial_stock' => 5, 'min_stock' => 2]);
+    $with = app(CreateProduct::class)->handle([...$this->data, 'name' => 'Con mínimo', 'track_min_stock' => true, 'initial_stock' => 5, 'min_stock' => 2]);
+
+    expect($without->implicitVariant->min_stock)->toBe(0)
+        ->and($without->implicitVariant->stock)->toBe(5)
+        ->and($with->implicitVariant->min_stock)->toBe(2);
+});
+
+it('la grilla suma las columnas «Precio propio» y «Mínimo» solo cuando se piden', function () {
+    $page = Livewire::test(CreateProductPage::class)->set('data.attribute_0', ['S', 'M']);
+
+    $page->assertSee('Stock inicial')
+        ->assertDontSee('Precio propio')
+        ->assertDontSee('Mínimo');
+
+    $page->set('data.custom_prices', true)
+        ->assertSee('Precio propio')
+        ->assertDontSee('Mínimo');
+
+    $page->set('data.track_min_stock', true)
+        ->assertSee('Precio propio')
+        ->assertSee('Mínimo');
+});
+
+it('el alta desde el panel guarda precio y mínimo solo con las casillas encendidas', function () {
+    $row = ['attributes' => ['Talle' => 'S'], 'label' => 'S', 'price' => '1500.00', 'initial_stock' => 2, 'min_stock' => 1];
+
+    Livewire::test(CreateProductPage::class)
+        ->fillForm([...$this->data, 'name' => 'Sin extras', 'variants' => [$row]])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    Livewire::test(CreateProductPage::class)
+        ->fillForm([...$this->data, 'name' => 'Con extras', 'custom_prices' => true, 'track_min_stock' => true, 'variants' => [$row]])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $plain = Product::query()->where('name', 'Sin extras')->firstOrFail()->variants()->where('name', 'S')->firstOrFail();
+    $extra = Product::query()->where('name', 'Con extras')->firstOrFail()->variants()->where('name', 'S')->firstOrFail();
+
+    expect($plain->price)->toBeNull()
+        ->and($plain->min_stock)->toBe(0)
+        ->and($extra->price)->toBe('1500.00')
+        ->and($extra->min_stock)->toBe(1);
+});
+
 it('deja el stock inicial como un movimiento «Carga inicial» a nombre de quien lo carga', function () {
     $product = app(CreateProduct::class)->handle([...$this->data, 'variants' => [
         ['attributes' => ['Talle' => 'S'], 'initial_stock' => 4],

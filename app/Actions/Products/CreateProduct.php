@@ -30,6 +30,8 @@ class CreateProduct
      * Además puede cargar, en el mismo acto, las variantes (`variants`, cada una con
      * sus `attributes`, `price`, `initial_stock` y `min_stock`) o, para un producto
      * simple, `initial_stock` y `min_stock`. El stock inicial queda como un movimiento.
+     * `custom_prices` y `track_min_stock` (por defecto sí) dicen si se usan el precio propio
+     * y el stock mínimo cargados.
      *
      * @param  array<string, mixed>  $data
      */
@@ -39,9 +41,21 @@ class CreateProduct
         $initialStock = $data['initial_stock'] ?? null;
         $minStock = $data['min_stock'] ?? null;
 
-        unset($data['variants'], $data['initial_stock'], $data['min_stock']);
+        // Precio propio y stock mínimo son opcionales: sin pedirlos, lo que haya quedado cargado se descarta.
+        $customPrices = (bool) ($data['custom_prices'] ?? true);
+        $trackMinStock = (bool) ($data['track_min_stock'] ?? true);
 
-        $rows = $this->variantRows($variants);
+        unset($data['variants'], $data['initial_stock'], $data['min_stock'], $data['custom_prices'], $data['track_min_stock']);
+
+        if (! $trackMinStock) {
+            $minStock = null;
+        }
+
+        $rows = array_map(fn (array $row): array => [
+            ...$row,
+            'price' => $customPrices ? $row['price'] : null,
+            'min_stock' => $trackMinStock ? $row['min_stock'] : 0,
+        ], $this->variantRows($variants));
 
         return DB::transaction(function () use ($data, $rows, $initialStock, $minStock): Product {
             $sku = trim((string) ($data['sku'] ?? ''));

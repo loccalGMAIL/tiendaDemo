@@ -88,31 +88,28 @@ class ProductForm
             }
         }
 
-        $columns = [
-            TableColumn::make('Variante'),
-            TableColumn::make('Precio propio')->width('9rem'),
-        ];
+        $hasRows = fn (Get $get): bool => $variantsOn() && filled($get('variants'));
 
-        $cells = [
-            Hidden::make('attributes'),
-            TextInput::make('label')->hiddenLabel()->readOnly()->dehydrated(false),
-            TextInput::make('price')->hiddenLabel()->numeric()->minValue(0)->step('0.01')->prefix('$')->placeholder('Del producto'),
-        ];
+        // El precio propio y el stock mínimo son opcionales: se suman a la grilla solo si se piden.
+        $fields[] = Toggle::make('custom_prices')
+            ->label('Precio distinto por variante')
+            ->helperText('Apagado, todas las variantes se venden al precio del producto.')
+            ->live()
+            ->visible($hasRows);
 
-        if (Modules::enabled(Module::Stock)) {
-            $columns[] = TableColumn::make('Stock inicial')->width('8rem');
-            $columns[] = TableColumn::make('Mínimo')->width('7rem');
-            $cells[] = TextInput::make('initial_stock')->hiddenLabel()->numeric()->integer()->minValue(0)->default(null);
-            $cells[] = TextInput::make('min_stock')->hiddenLabel()->numeric()->integer()->minValue(0)->default(null);
-        }
+        $fields[] = Toggle::make('track_min_stock')
+            ->label('Cargar stock mínimo')
+            ->helperText('El mínimo sirve para el aviso de stock bajo; es opcional.')
+            ->live()
+            ->visible($stockOn);
 
         $fields[] = Repeater::make('variants')
             ->label('Variantes')
-            ->table($columns)
-            ->schema($cells)
+            ->table(fn (Get $get): array => self::variantGrid((bool) $get('custom_prices'), (bool) $get('track_min_stock'))[0])
+            ->schema(fn (Get $get): array => self::variantGrid((bool) $get('custom_prices'), (bool) $get('track_min_stock'))[1])
             ->addable(false)
             ->reorderable(false)
-            ->visible(fn (Get $get): bool => $variantsOn() && filled($get('variants')))
+            ->visible($hasRows)
             ->columnSpanFull();
 
         $fields[] = TextInput::make('initial_stock')
@@ -128,7 +125,7 @@ class ProductForm
             ->numeric()
             ->integer()
             ->minValue(0)
-            ->visible(fn (Get $get): bool => $stockOn() && blank($get('variants')))
+            ->visible(fn (Get $get): bool => $stockOn() && blank($get('variants')) && (bool) $get('track_min_stock'))
             ->helperText('Por debajo de este número el producto aparece como stock bajo.');
 
         $fields[] = Toggle::make('print_labels')
@@ -140,6 +137,38 @@ class ProductForm
             ->columnSpanFull();
 
         return $fields;
+    }
+
+    /**
+     * Encabezados y celdas de la grilla de variantes, siempre en el mismo orden: el modo
+     * tabla del Repeater empareja cada encabezado con su celda por posición.
+     *
+     * @return array{0: array<int, TableColumn>, 1: array<int, Component>}
+     */
+    private static function variantGrid(bool $prices, bool $minimum): array
+    {
+        $columns = [TableColumn::make('Variante')];
+        $cells = [
+            Hidden::make('attributes'),
+            TextInput::make('label')->hiddenLabel()->readOnly()->dehydrated(false),
+        ];
+
+        if ($prices) {
+            $columns[] = TableColumn::make('Precio propio')->width('9rem');
+            $cells[] = TextInput::make('price')->hiddenLabel()->numeric()->minValue(0)->step('0.01')->prefix('$')->placeholder('Del producto');
+        }
+
+        if (Modules::enabled(Module::Stock)) {
+            $columns[] = TableColumn::make('Stock inicial')->width('8rem');
+            $cells[] = TextInput::make('initial_stock')->hiddenLabel()->numeric()->integer()->minValue(0)->default(null);
+
+            if ($minimum) {
+                $columns[] = TableColumn::make('Mínimo')->width('7rem');
+                $cells[] = TextInput::make('min_stock')->hiddenLabel()->numeric()->integer()->minValue(0)->default(null);
+            }
+        }
+
+        return [$columns, $cells];
     }
 
     /**

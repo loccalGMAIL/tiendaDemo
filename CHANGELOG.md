@@ -12,6 +12,8 @@ Requiere migración: no. Los ajustes nuevos del módulo Códigos de barras toman
   - *Cantidad*: una por cada unidad del stock inicial (por defecto, mínimo una) o una por variante.
   - Al guardar, se abre Etiquetas con las variantes del producto nuevo ya cargadas, listas para imprimir.
 - **Etiquetas con el nombre del atributo**: la variante se imprime como «Talle: M / Color: Negro» (con el nombre de cada atributo). Las variantes cargadas a mano, sin atributos, siguen mostrando su nombre. La línea puede ocupar dos renglones en lugar de cortarse.
+- **Etiquetas solo del producto**: al llegar a Etiquetas desde el alta, desde «Imprimir etiquetas» de un producto, desde una compra o desde la selección del listado, la pantalla muestra únicamente esas variantes (con el nombre del producto arriba y sin buscador). Desde el menú sigue el listado completo.
+- **Precio por variante y stock mínimo, opcionales**: en el alta se activan con las casillas «Precio distinto por variante» y «Cargar stock mínimo»; apagadas, la grilla solo pide el stock inicial y las variantes se venden al precio del producto.
 - «Generar variantes» de la edición sigue igual y comparte con el alta la lista de atributos.
 
 ## 0.21.0 (2026-11-25) — Control de caja
